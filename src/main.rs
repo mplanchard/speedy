@@ -4,8 +4,6 @@ extern crate clap;
 #[macro_use]
 extern crate diesel;
 #[macro_use]
-extern crate diesel_migrations;
-#[macro_use]
 extern crate rocket;
 extern crate rocket_contrib;
 
@@ -14,9 +12,6 @@ use diesel_migrations::{RunMigrationsError};
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use rocket_contrib::serve::StaticFiles;
-
-
-embed_migrations!("./migrations");
 
 
 fn cli<'a>() -> ArgMatches<'a> {
@@ -42,8 +37,7 @@ fn run() {
 
 
 fn create_connection() -> Result<SqliteConnection, RunMigrationsError> {
-    let connection = SqliteConnection::establish(":memory:").unwrap();
-    embedded_migrations::run(&connection)?;
+    let connection = SqliteConnection::establish("resources/db.sql").unwrap();
     Ok(connection)
 }
 
