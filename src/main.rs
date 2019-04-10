@@ -1,17 +1,13 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 extern crate clap;
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate rocket;
-extern crate rocket_contrib;
+extern crate warp;
+
 
 use clap::{Arg, ArgMatches, App, SubCommand};
-use diesel_migrations::{RunMigrationsError};
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
-use rocket_contrib::serve::StaticFiles;
+// use diesel::prelude::*;
+// use diesel::sqlite::SqliteConnection;
+// use warp::Filter;
 
 
 fn cli<'a>() -> ArgMatches<'a> {
@@ -23,28 +19,8 @@ fn cli<'a>() -> ArgMatches<'a> {
 
 
 fn run() {
-    let conn = create_connection();
-    match conn {
-        Ok(_) => {}
-        Err(e) => {println!("{:?}", e)}
-    }
-    rocket::ignite()
-        .mount(
-            "/",
-            StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static"))
-        ).launch();
-}
-
-
-fn create_connection() -> Result<SqliteConnection, RunMigrationsError> {
-    let connection = SqliteConnection::establish("resources/db.sql").unwrap();
-    Ok(connection)
-}
-
-
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+    let index = warp::fs::dir("static");
+    warp::serve(index).run(([127, 0, 0, 1], 5000));
 }
 
 
