@@ -3,12 +3,10 @@ extern crate clap;
 extern crate diesel;
 extern crate warp;
 
-
-use clap::{Arg, ArgMatches, App, SubCommand};
+use clap::{App, Arg, ArgMatches, SubCommand};
 // use diesel::prelude::*;
 // use diesel::sqlite::SqliteConnection;
 // use warp::Filter;
-
 
 fn cli<'a>() -> ArgMatches<'a> {
     App::new("speedy")
@@ -17,19 +15,17 @@ fn cli<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
-
 fn run() {
     let index = warp::fs::dir("static");
     warp::serve(index).run(([127, 0, 0, 1], 5000));
 }
 
-
 fn main() {
     let opts = cli();
     match opts.subcommand_name() {
-        Some("run") => { run() }
-        Some("add-post") => { println!("add-post") }
-        Some(_) => { println!("??") }
-        None => { run() }
+        Some("run") => run(),
+        Some("add-post") => println!("add-post"),
+        Some(_) => println!("??"),
+        None => run(),
     }
 }
