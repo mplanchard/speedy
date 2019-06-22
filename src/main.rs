@@ -1,12 +1,8 @@
 extern crate clap;
-#[macro_use]
-extern crate diesel;
-extern crate warp;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
-// use diesel::prelude::*;
-// use diesel::sqlite::SqliteConnection;
-// use warp::Filter;
+use warp;
+
 
 fn cli<'a>() -> ArgMatches<'a> {
     App::new("speedy")
