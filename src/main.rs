@@ -1,11 +1,8 @@
-use std::borrow::Cow;
-use std::cmp::Ordering;
-use std::fmt;
 use std::fs;
 use std::iter::FromIterator;
 
 use chrono::{Local, NaiveDate};
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, ArgMatches, SubCommand};
 use liquid;
 use pulldown_cmark::{html, Options as MDOptions, Parser as MDParser};
 use warp;
