@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
-    <title>MP - Home</title>
+    <title>MP - First Post</title>
     <script src="/js/vendor/highlight/highlight.pack.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
 </head>
@@ -36,35 +36,42 @@
 </nav>
     </header>
     <main>
-        <h1>Welcome!</h1>
-        <p>
-            My name is Matthew Planchard, and I'm a software engineer
-            living in Austin, TX. This is a blog I maintain mostly for
-            the purpose of playing around with whatever technologies
-            I'm interested in at the present.
-        </p>
-        <p>
-            If you particularly enjoy anything here and want to drop me
-            a line, you can find my contact information on the
-            <a href="/about.html">about</a> page. If you're curious about
-            the technical details behind this website, that stuff is there,
-            too.
-        </p>
-        <section>
-    <h1>Recent Posts</h1>
-    <ul>
-<li>
-    <a href="/posts/second-post.html">Second Post</a>
-    &mdash; a second post to test the generator
-</li>
-<li>
-    <a href="/posts/first-post.html">First Post</a>
-    &mdash; just an initial post to test the generator
-</li>
-    </ul>
-</section>
+        <h1>Welcome to the Blog</h1>
+<p>This post was created as part of the development process, largely to
+test that things were working the way I expected.</p>
+<p>The main things I needed to test were:</p>
+<ul>
+<li>markdown rendering into HTML (thus the variety of content types here)</li>
+<li>parsing of header information re: title, date, and tags</li>
+<li>population of introductory <code>posts</code> page</li>
+</ul>
+<p>I also needed to verify that code formatting is working as intended
+when specifying a language, e.g.:</p>
+<pre><code class="language-rust">fn main() {
+    println!(&quot;Hello, world!&quot;);
+}
+</code></pre>
+<p>The upshot is that, for each markdown file in the <code>posts</code> directory,
+sibling to the <code>src</code> directory, we should generate an individual HTML
+file in the <code>posts</code> directory using the <code>post</code> template, filling in the
+HTML generated from the markdown file for the <code>{{ content }}</code> block.</p>
+<p>We should also be adding each of the posts to the RSS feed.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-06-22</p>
+            <p>Tags: about</p>
+        </section>
     </main>
     <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left"></div>
+    <div class="footer-nav-right">
+        <a href="/posts/second-post.html">
+            next &gt
+        </a>
+    </div>
+</nav>
+
         <details class="footer-license">
     <summary>
         &copy; Matthew Planchard, 2019-06-23

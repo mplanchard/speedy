@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - About</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <!-- Contents for the "About" Page -->
+<section>
+    <h1>About Me</h1>
+    <p>
+        I am a software engineer, currently living in Austin, TX.
+    </p>
+    <h3>Contact</h3>
+    <address>
+        <ul>
+            <li>GitHub: <a href="https://github.com/mplanchard">mplanchard</a></li>
+            <li>Email: msplanchard at gmail dot com</li>
+        </ul>
+    </address>
+</section>
+<section>
+    <h1>About this Website</h1>
+    <p>
+        This is a static website, created with minimal JavaScript,
+        with an intentionally simple aesthetic. My hope is that it
+        can be quick to load, easy to read, and accessible to people
+        on a variety of devices with a variety of Internet speeds.
+    </p>
+    <p>
+        I have attempted to use semantic HTML whenever possible to
+        ensure that this website is also accessible to those with
+        disabilities. If you encounter any issues with the presentation
+        of this website in that regard, please do not hesitate to
+        contact me.
+    </p>
+    <p>
+        All of those code that generates this website, as well as the
+        markdown files that are used to generate the blog posts, can
+        be found on my GitHub. The actual content of the blog is
+        licensed under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>, while the code is licensed under the
+        <a rel="license" href="https://www.mozilla.org/en-US/MPL/2.0/">
+            Mozilla Public License 2.0
+        </a>.
+    </p>
+    <h2>How It's Made</h2>
+    <p>
+        As noted above, this website is a static collection of HTML, JS,
+        CSS, and fonts. The header and footer sections are hand-written
+        HTML, as are the contents of this page. The remainder of the
+        contents are generated either from markdown files (in the case of
+        blog posts) or via scripts and templating (in the case of the RSS
+        feed and the home page). See below for a list of the technologies
+        used, and check check out the
+        <a href="https://github.com/mplanchard/speedy">
+            GitHub repository
+        </a> for all the nitty
+        gritty details. Everything is available under the MPL 2.0, so
+        feel free to use it as you wish.
+    </p>
+    <h3>Technologies</h3>
+    <ul>
+        <li>
+            <cite><a href="https://highlightjs.org/"><code>highlight.js</code></a></cite>
+            &mdash; this wonderful library for syntax highlighting
+            is the only JavaScript used on this site.
+        </li>
+        <li>
+            <cite><a href="https://fonts.google.com/">GoogleFonts</a></cite>
+            &mdash; a large collection of freely available fonts
+        </li>
+        <li>
+            <cite><a href="https://google-webfonts-helper.herokuapp.com/fonts/">google-webfonts-helper</a></cite>
+            &mdash; another excellent project that makes it easy to download
+            backwards-compatible collections of font files
+        </li>
+        <li>
+            <cite><a href="https://www.rust-lang.org/">Rust</a></cite>
+            &mdash; the local development of the website and the generation
+            of static content is done using Rust, a fast, safe, systems-level
+            language that's also a pleasure to use. I chose Rust for this
+            project because it's a fun language to work in, with a great
+            community and lots of powerful tools for getting things done
+            quickly
+        </li>
+        <li>
+            <cite><a href="https://clap.rs/"><code>clap</code></a></cite>
+            &mdash; the best Command-Line Argument Parser I've ever used in
+            any language
+        </li>
+        <li>
+            <cite><a href="https://docs.rs/liquid/0.18.2/liquid/"><code>liquid-rust</code></a></cite>
+            &mdash; a Rust implementation of the liquid templating language,
+            used for generating static HTML
+        </li>
+        <li>
+            <cite><a href="https://docs.rs/warp/0.1.16/warp/"><code>warp</code></a></cite>
+            &mdash; a simple, composable Rust web server, used for local
+            development of the site
+        </li>
+    </ul>
+    <h3>Fonts</h3>
+    <ul>
+        <li>
+            <cite><a href="https://fonts.google.com/specimen/Roboto+Slab">Roboto Slab</a></cite>
+            &mdash; this lovely, very readable serif font by Christian Robertson
+            is used for all paragraph-style content on this site.
+        </li>
+        <li>
+            <cite><a href="https://fonts.google.com/specimen/Open+Sans">Open Sans</a></cite>
+            &mdash; this classic sans-serif font by Steve Metteson is used for
+            navigational and header content
+        </li>
+        <li>
+            <cite><a href="https://fonts.google.com/specimen/Fira+Mono">Fira Mono</a></cite>
+            &mdash; this monospace font developed for Mozilla by
+            <a href="http://www.carrois.com/">Carrois Apostrophe</a>
+            is what I use in my terminal and editors, so I figured it would
+            be nice to include it in the blog as well
+        </li>
+    </ul>
+</section>
+    </main>
+    <footer>
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-06-23
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-06-23 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>
