@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - GCC on Fedora 12(!)</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Installing the GCC on Fedora 12(!)</h1>
+<p><strong>NB:</strong> this post was imported from <a href="https://medium.com/@mplanchard/installing-the-gcc-compiler-on-fedora-12-1f3494823afa">medium</a></p>
+<p>I recently found myself needing a compiler on an old Fedora 12 armv5tel system. Fedora never released a compiler for the armv5tel version 12, so I had to backport from 13. Putting aside for now the reasonable, proper correct solution of finding a way to upgrade the OS, I figured I’d document the upgrade process for anyone else who finds themselves in this situation.</p>
+<p>All told, the process is probably easier than you would expect. It’s just a matter of package downloads, upgrades, and installations. All told, it required 16 new or updated RPMs and about 46 MB of disk space.</p>
+<p>All of the required packages can be found at rpmfind.net and are listed below:</p>
+<ul>
+<li>binutils-2.20.51.0.2–23.fc13.armv5tel.rpm</li>
+<li>cloog-ppl-0.15.7–1.fc12.armv5tel.rpm</li>
+<li>cpp-4.4.5–2.fc13.armv5tel.rpm</li>
+<li>gcc-4.4.5–2.fc13.armv5tel.rpm</li>
+<li>glibc-2.12–4.armv5tel.rpm</li>
+<li>glibc-common-2.12–4.armv5tel.rpm</li>
+<li>glibc-devel-2.12–4.armv5tel.rpm</li>
+<li>glibc-headers-2.12–4.armv5tel.rpm</li>
+<li>gmp-4.3.1–6.fc13.armv5tel.rpm</li>
+<li>kernel-headers-2.6.33.3–85.fc13.armv5tel.rpm</li>
+<li>libffi-3.0.9–1.fc13.armv5tel.rpm</li>
+<li>libffi-devel-3.0.9–1.fc13.armv5tel.rpm</li>
+<li>libgcc-4.4.5–2.fc13.armv5tel.rpm</li>
+<li>libgomp-4.4.5–2.fc13.armv5tel.rpm</li>
+<li>mpfr-2.4.2–1.fc13.armv5tel.rpm</li>
+<li>ppl-0.10.2–11.fc13.armv5tel.rpm</li>
+</ul>
+<p>Use wget or your preferred ftp client to download the requisite packages to a local directory, at which point installation is as easy as</p>
+<pre><code class="language-raw">yum — nogpgcheck localinstall *.rpm
+</code></pre>
+<p>And voila! You’ve got a compiler. I make no guarantees as to its fitness for any particular purpose, although in my experience it has worked fairly well for installing python packages with C extensions from pip.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2015-11-02</p>
+            <p>Tags: gcc, fedora, linux</p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left"></div>
+    <div class="footer-nav-right">
+        <a href="/posts/stacking-calls-to-pytest-parametrize.html">
+            next &gt
+        </a>
+    </div>
+</nav>
+
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-06-30
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-06-30 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>

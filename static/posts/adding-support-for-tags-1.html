@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - Adding Support for Tags: Part 1</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Adding Tags to my Static Site</h1>
+<aside>
+N.B. I initially intended to do this all in one go, but the first post
+wound up being fairly long, so I'm going to split it out into sections.
+This first part is on refactoring tag parsing.
+</aside>
+<p>A main architectural consideration when creating this site was that I
+wanted to support all of the parts of a dynamic website I liked,
+specifically tags, post updates, and ordering posts by arbitrary
+criteria (generally date).</p>
+<p>I played with a lot of ideas, but what I wound up with was:</p>
+<ul>
+<li>A <a href="https://github.com/mplanchard/speedy/tree/master/posts">directory</a> of markddown
+files, each of which becomes a single blog post</li>
+<li>A predefined header format (colon-separated keys and values, headers
+delineated by newlines) expected at the top of each markdown file</li>
+</ul>
+<p>The header allows me to track whatever arbitrary metadata I'd like to track
+about a post. It also gives me the ability to go in and add or update things
+later (for example, while I originally only had a single date header, I
+decided to add created/updated dates).</p>
+<p>Tags have always been a part of my header &quot;specification,&quot; because it was
+always my intention to enable them. I just didn't get around to it in the
+initial implementation, because I was in a &quot;just get things working&quot; mode.
+There's no real error handling, things are done roughly, there's plenty
+of duplication. In fact, nothing in this project is perfect or
+perfectly architected, but as I continue to work on it, I am beginning to
+refactor things a bit. As such, these posts will be as much about how to
+do a given thing as they will be about doing early-stage rewrites of a
+project. This is a critical skill in software development, in my
+experience, because the first version of something is never the best,
+especially when it was done with speed as a primary concern.</p>
+<p>Anyway, on to the action!</p>
+<h2>Refactoring Header Parsing</h2>
+<p>Each post's metadata is stored in a simple <code>struct</code>:</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Metadata {
+    title: String,
+    slug: String,
+    created: NaiveDate,
+    updated: NaiveDate,
+    tags: Vec&lt;String&gt;,
+    summary: String,
+}
+</code></pre>
+<p>The metadata is a part of another <code>struct</code> that represents a post during
+static site generation:</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Post {
+    metadata: Metadata,
+    content: String,
+}
+</code></pre>
+<p>Currently, the generator is quite naive. It just rolls through the
+<code>posts</code> directory, reads the content of each one, splits out the header
+lines, and then makes a <code>Post</code> from the <code>Metadata</code> gleaned from the
+headers and the remainder of the content.</p>
+<p>The function that parses the metadata is currently comically straightforward.
+It simply collects an iterable of <code>&amp;str</code> into a <code>Vec</code>, sorts it, and
+then relies on the fact that the items are always going to be in the
+same alphabetical order to grab the values out from the lines:</p>
+<pre><code class="language-rust">fn parse_metadata&lt;'a, L: Iterator&lt;Item = &amp;'a str&gt;&gt;(lines: L) -&gt; Metadata {
+    let mut lines = lines.collect::&lt;Vec&lt;&amp;str&gt;&gt;();
+    lines.sort();
+    let created_date_str = line_contents(lines[0]);
+    let slug = line_contents(lines[1]);
+    let summary = line_contents(lines[2]);
+    let tags_str = line_contents(lines[3]);
+    let title = line_contents(lines[4]);
+    let updated_date_str = line_contents(lines[5]);
+
+    let updated = NaiveDate::parse_from_str(
+        &amp;updated_date_str, &quot;%Y-%m-%d&quot;
+    ).expect(&quot;invalid date&quot;);
+    let created = NaiveDate::parse_from_str(
+        &amp;created_date_str, &quot;%Y-%m-%d&quot;
+    ).expect(&quot;invalid date&quot;);
+    let tags = tags_str
+        .trim()
+        .split(&quot;,&quot;)
+        .map(|s| s.to_owned())
+        .collect::&lt;Vec&lt;String&gt;&gt;();
+    Metadata {
+        created,
+        slug,
+        summary,
+        tags,
+        title,
+        updated,
+    }
+}
+</code></pre>
+<p>(<code>line_contents</code> just splits the line, discards the key, and returns the
+trimmed string).</p>
+<p>Anyway, this is a prime spot for a refactor, it seems to me! We've got
+what is essentially a constructor method, but it's not directly associated
+with its <code>struct</code>. The question is what we should pass in to our constructor.
+Options include:</p>
+<ul>
+<li>The raw content of the markdown</li>
+<li>A single String or slice of the <em>n</em> header lines</li>
+<li>An iterable of header lines</li>
+<li>A vector of header lines</li>
+</ul>
+<p>It seems to me the best separation of concerns is for the the metadata
+struct to be constructable from either the raw <code>.md</code> content <em>or</em> just
+the header lines. This allows more flexibility in the call, freeing the
+callers from needing to implement logic to split the lines or otherwise
+collect them in a way that is easier for the constructor to digest.</p>
+<p>With this, we'll probably also want to adjust our process for getting header
+content to work by looking for header keys, rather than sorting and getting
+things in alphabetical order.</p>
+<p>Let's start by storing an <a href="https://doc.rust-lang.org/stable/edition-guide/rust-2018/trait-system/associated-constants.html">associated constant</a>
+with the <code>Metadata</code> referencing how many lines we expect the header to be:</p>
+<pre><code class="language-rust">impl Metadata {
+    const NUM_HEADER_LNS: u8 = 6;
+}
+</code></pre>
+<p>We can then delete the global <code>POST_HEADER_LEN</code> constant we were using, and
+let the compiler guide us in replacing it with the new constant.</p>
+<p>Now we want to add a constructor that takes something we can reference as
+a <code>&amp;str</code>:</p>
+<pre><code class="language-rust">impl Metadata {
+    const NUM_HEADER_LNS: u8 = 6;
+
+    fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self {
+    }
+}
+</code></pre>
+<p>Getting an iterator over our header lines is easy:</p>
+<pre><code class="language-rust">fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self {
+    let lines = header_text.as_ref().lines().take(Self::NUM_HEADER_LNS.into());
+}
+</code></pre>
+<aside>
+N.B. we call <code>.into()</code> on our constant, because
+<code>.take()</code> expects <code>u16</code>, and we stored our value as
+<code>u8</code>.
+</aside>
+<p>It's probably not as efficient as just grabbing things based on their
+alphabetical order like we did earlier, but we can now take our iterator
+and convert it into a <code>HashMap</code>:</p>
+<pre><code class="language-rust">fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self {
+    let lines = header_text.as_ref().lines().take(Self::NUM_HEADER_LNS.into());
+
+    let ln_tuples = lines.map(
+        |ln| {
+            let parts = ln.splitn(2, &quot;:&quot;).map(|i| i.trim());
+            (
+                parts.next().expect(&amp;format!(&quot;bad header: {:?}&quot;, ln)),
+                parts.next().expect(&amp;format!(&quot;bad header: {:?}&quot;, ln))
+            )
+        }
+    );
+    let headers: HashMap&lt;&amp;str, &amp;str&gt; = ln_tuples.collect();
+}
+</code></pre>
+<p>May as well go ahead and pull everything we've done so far out into
+its own function:</p>
+<pre><code class="language-rust">fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self {
+    let headers = Self::header_map(&amp;header_text);
+}
+
+// We need the lifetimes to tell the interpreter that our references in
+// our HashMap will only live as long as the `header_text`
+fn header_map&lt;'a, S: AsRef&lt;str&gt;&gt;(header_text: &amp;'a S) -&gt; HashMap&lt;&amp;'a str, &amp;'a str&gt; {
+    let lines = header_text.as_ref().lines().take(Self::NUM_HEADER_LNS.into());
+    let ln_tuples = lines.map(
+        |ln| {
+            let mut parts = ln.splitn(2, &quot;:&quot;).map(|i| i.trim());
+            (
+                parts.next().expect(&amp;format!(&quot;bad header: {:?}&quot;, ln)),
+                parts.next().expect(&amp;format!(&quot;bad header: {:?}&quot;, ln))
+            )
+        }
+    );
+    // Note we don't have to specify the type on `.collect()` here,
+    // because the compiler is smart enough to collect it into our
+    // specified return type
+    ln_tuples.collect()
+}
+</code></pre>
+<p>The only of our struct attributes that aren't <code>String</code>s are the dates
+and the tags, so let's handle parsing those individually. First, tags:</p>
+<pre><code class="language-rust">fn tags&lt;S: AsRef&lt;str&gt;&gt;(tags: S) -&gt; Vec&lt;String&gt; {
+    tags.as_ref()
+        .split(&quot;,&quot;)
+        .map(|s| s.trim())
+        .map(|s| s.to_owned())
+        .collect()
+}
+</code></pre>
+<p>Then, dates:</p>
+<pre><code class="language-rust">fn date&lt;S: AsRef&lt;str&gt;&gt;(date: S) -&gt; NaiveDate {
+    NaiveDate::parse_from_str(
+        date.as_ref(), &quot;%Y-%m-%d&quot;
+    ).expect(&amp;format!(&quot;invalid date: {:?}&quot;, date.as_ref()))
+}
+</code></pre>
+<p>actually, let's get those magic strings out of there and make them
+associated constants, too:</p>
+<pre><code class="language-rust">impl Metadata {
+    const NUM_HEADER_LNS: u8 = 6;
+    const TAG_DELIMITER: &amp;'static str = &quot;,&quot;;
+    const DATE_FMT: &amp;'static str = &quot;%Y-%m-%d&quot;;
+
+    fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self { ... }
+    fn header_map&lt;'a, S: AsRef&lt;str&gt;&gt;(header_text: &amp;'a S) -&gt; HashMap&lt;&amp;'a str, &amp;'a str&gt; { ... }
+
+    fn tags&lt;S: AsRef&lt;str&gt;&gt;(tags: S) -&gt; Vec&lt;String&gt; {
+        tags.as_ref()
+            .split(Self::TAG_DELIMITER)
+            .map(|s| s.trim())
+            .map(|s| s.to_owned())
+            .collect()
+    }
+
+    fn date&lt;S: AsRef&lt;str&gt;&gt;(date: S) -&gt; NaiveDate {
+        NaiveDate::parse_from_str(
+            date.as_ref(), Self::DATE_FMT
+        ).expect(&amp;format!(&quot;invalid date: {:?}&quot;, date.as_ref()))
+    }
+}
+</code></pre>
+<p>A generic function to grab a header out of our map:</p>
+<pre><code class="language-rust">fn header_value&lt;'a&gt;(headers: &amp;'a HashMap&lt;&amp;str, &amp;str&gt;, key: &amp;str) -&gt; &amp;'a str {
+    headers.get(key).expect(&amp;format!(&quot;No {:?} header&quot;, key))
+}
+</code></pre>
+<p>Now we can finally flesh out or <code>new()</code> method:</p>
+<pre><code class="language-rust">fn new&lt;S: AsRef&lt;str&gt;&gt;(header_text: S) -&gt; Self {
+    let headers = Self::header_map(&amp;header_text);
+    let get_value = |v: &amp;str| Self::header_value(&amp;headers, v);
+
+    Metadata {
+        title: get_value(&amp;&quot;title&quot;).into(),
+        slug: get_value(&amp;&quot;slug&quot;).into(),
+        created: Self::date(get_value(&amp;&quot;created&quot;)),
+        updated: Self::date(get_value(&amp;&quot;updated&quot;)),
+        tags: Self::tags(get_value(&amp;&quot;tags&quot;)),
+        summary: get_value(&amp;&quot;summary&quot;).into(),
+    }
+}
+</code></pre>
+<p>All of this allows us to replace this, in our <code>generate()</code> function:</p>
+<pre><code class="language-rust">let md_txt =
+    fs::read_to_string(md.path()).expect(&amp;format!(&quot;couldn't read md: {:?}&quot;, md));
+let metadata = parse_metadata(md_txt.lines().take(Metadata::NUM_HEADER_LNS.into()));
+</code></pre>
+<p>with this:</p>
+<pre><code class="language-rust">let md_txt =
+    fs::read_to_string(md.path()).expect(&amp;format!(&quot;couldn't read md: {:?}&quot;, md));
+let metadata = Metadata::new(&amp;md_txt);
+</code></pre>
+<p>And, <code>cargo run generate</code> still runs quite quickly.</p>
+<p>Next time, I'm going to work on automatically adding a page with a list of
+posts for each tag, a <code>tags.html</code> page with a listing of all tags, and the
+ability for any tag reference to easily point to the tag's individual
+page. Maybe that won't all be in one part, but we'll see.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-06-30</p>
+            <p>Tags: rust, blog, programming</p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/why-bother.html">
+            &lt previous
+        </a>
+    </div>
+    <div class="footer-nav-right"></div>
+</nav>
+
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-06-30
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-06-30 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>

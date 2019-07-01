@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::fs;
 use std::iter::FromIterator;
+use std::process::Command;
 
 use chrono::{Local, NaiveDate};
 use clap::{App, ArgMatches, SubCommand};
@@ -7,16 +9,66 @@ use liquid;
 use pulldown_cmark::{html, Options as MDOptions, Parser as MDParser};
 use warp;
 
-const POST_HEADER_LEN: usize = 5;
-
 
 #[derive(Debug)]
 struct Metadata {
     title: String,
     slug: String,
-    date: NaiveDate,
+    created: NaiveDate,
+    updated: NaiveDate,
     tags: Vec<String>,
     summary: String,
+}
+impl Metadata {
+    const NUM_HEADER_LNS: u8 = 6;
+    const TAG_DELIMITER: &'static str = ",";
+    const DATE_FMT: &'static str = "%Y-%m-%d";
+
+    fn new<S: AsRef<str>>(header_text: S) -> Self {
+        let headers = Self::header_map(&header_text);
+        let get_value = |v: &str| Self::header_value(&headers, v);
+
+        Metadata {
+            title: get_value(&"title").into(),
+            slug: get_value(&"slug").into(),
+            created: Self::date(get_value(&"created")),
+            updated: Self::date(get_value(&"updated")),
+            tags: Self::tags(get_value(&"tags")),
+            summary: get_value(&"summary").into(),
+        }
+    }
+
+    fn header_map<'a, S: AsRef<str>>(header_text: &'a S) -> HashMap<&'a str, &'a str> {
+        let lines = header_text
+            .as_ref()
+            .lines()
+            .take(Self::NUM_HEADER_LNS.into());
+        let ln_tuples = lines.map(|ln| {
+            let mut parts = ln.splitn(2, ":").map(|i| i.trim());
+            (
+                parts.next().expect(&format!("bad header: {:?}", ln)),
+                parts.next().expect(&format!("bad header: {:?}", ln)),
+            )
+        });
+        ln_tuples.collect()
+    }
+
+    fn header_value<'a>(headers: &'a HashMap<&str, &str>, key: &str) -> &'a str {
+        headers.get(key).expect(&format!("No {:?} header", key))
+    }
+
+    fn tags<S: AsRef<str>>(tags: S) -> Vec<String> {
+        tags.as_ref()
+            .split(Self::TAG_DELIMITER)
+            .map(|s| s.trim())
+            .map(|s| s.to_owned())
+            .collect()
+    }
+
+    fn date<S: AsRef<str>>(date: S) -> NaiveDate {
+        NaiveDate::parse_from_str(date.as_ref(), Self::DATE_FMT)
+            .expect(&format!("invalid date: {:?}", date.as_ref()))
+    }
 }
 
 #[derive(Debug)]
@@ -25,39 +77,6 @@ struct Post {
     content: String,
 }
 
-fn line_contents(line: &str) -> String {
-    line.split(":")
-        .skip(1)
-        .take(1)
-        .next()
-        .expect(&format!("No content for header: {}", line))
-        .trim()
-        .to_owned()
-}
-
-fn parse_metadata<'a, L: Iterator<Item = &'a str>>(lines: L) -> Metadata {
-    let mut lines = lines.collect::<Vec<&str>>();
-    lines.sort();
-    let date_str = line_contents(lines[0]);
-    let slug = line_contents(lines[1]);
-    let summary = line_contents(lines[2]);
-    let tags_str = line_contents(lines[3]);
-    let title = line_contents(lines[4]);
-
-    let date = NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").expect("invalid date");
-    let tags = tags_str
-        .trim()
-        .split(",")
-        .map(|s| s.to_owned())
-        .collect::<Vec<String>>();
-    Metadata {
-        title,
-        slug,
-        date,
-        tags,
-        summary,
-    }
-}
 
 fn md_to_html(md: &str, opts: MDOptions) -> String {
     let mut html = String::new();
@@ -136,6 +155,32 @@ fn generate_head_block(head_template: &liquid::Template, title: String) -> Strin
         .expect("failed to render head template")
 }
 
+fn generate_generic(
+    parser: &liquid::Parser,
+    head_template: &liquid::Template,
+    header: &str,
+    footer_license: &str,
+    title: &str,
+    content: &str,
+) -> String {
+    let generic_tpl = include_str!("../templates/generic.html");
+    let head = generate_head_block(&head_template, String::from(title));
+
+    let globals = liquid::value::Object::from_iter(vec![
+        ("head".into(), to_liquid_val(head)),
+        ("header".into(), to_liquid_val(header)),
+        ("content".into(), to_liquid_val(content)),
+        ("footer-license".into(), to_liquid_val(footer_license)),
+    ]);
+
+    parser
+        .parse(&generic_tpl)
+        .expect("failed to parse about")
+        .render(&globals)
+        .expect("failed to render head template")
+
+}
+
 fn generate_about(
     parser: &liquid::Parser,
     head_template: &liquid::Template,
@@ -162,7 +207,7 @@ fn generate_about(
     fs::write("static/about.html", about).expect("couldn't write about.html");
 }
 
-fn generate_index_and_posts<'a, P: IntoIterator<Item=&'a Post>> (
+fn generate_index_and_posts<'a, P: IntoIterator<Item = &'a Post>>(
     parser: &liquid::Parser,
     head_template: &liquid::Template,
     header: &str,
@@ -175,7 +220,9 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item=&'a Post>> (
     let posts_content_tpl = include_str!("../templates/snippets/posts-content.html");
     let head = generate_head_block(&head_template, String::from("Home"));
 
-    let index_template = parser.parse(&index_tpl).expect("Couldn't parse index template");
+    let index_template = parser
+        .parse(&index_tpl)
+        .expect("Couldn't parse index template");
     let posts_template = parser
         .parse(&posts_tpl)
         .expect("Couldn't parse posts template");
@@ -186,19 +233,26 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item=&'a Post>> (
         .parse(&posts_content_tpl)
         .expect("couldn't parse posts-content template");
 
-    let posts_items: String = posts.into_iter().map(|p| {
-        let globals = liquid::value::Object::from_iter(vec![
-            ("slug".into(), to_liquid_val(&p.metadata.slug)),
-            ("title".into(), to_liquid_val(&p.metadata.title)),
-            ("summary".into(), to_liquid_val(&p.metadata.summary)),
-        ]);
-        posts_post_tpl.render(&globals).expect(&format!("couldn't render post: {:?}", p))
-    }).collect::<Vec<String>>().join("\n");
+    let posts_items: String = posts
+        .into_iter()
+        .map(|p| {
+            let globals = liquid::value::Object::from_iter(vec![
+                ("slug".into(), to_liquid_val(&p.metadata.slug)),
+                ("title".into(), to_liquid_val(&p.metadata.title)),
+                ("summary".into(), to_liquid_val(&p.metadata.summary)),
+            ]);
+            posts_post_tpl
+                .render(&globals)
+                .expect(&format!("couldn't render post: {:?}", p))
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
 
-    let posts_content_globals = liquid::value::Object::from_iter(vec![
-        ("posts".into(), to_liquid_val(posts_items)),
-    ]);
-    let posts_content = posts_content_tpl.render(&posts_content_globals).expect("couldn't render posts content");
+    let posts_content_globals =
+        liquid::value::Object::from_iter(vec![("posts".into(), to_liquid_val(posts_items))]);
+    let posts_content = posts_content_tpl
+        .render(&posts_content_globals)
+        .expect("couldn't render posts content");
 
     let posts_globals = liquid::value::Object::from_iter(vec![
         ("head".into(), to_liquid_val(head)),
@@ -206,11 +260,33 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item=&'a Post>> (
         ("content".into(), to_liquid_val(posts_content)),
         ("footer-license".into(), to_liquid_val(footer_license)),
     ]);
-    let posts_html = posts_template.render(&posts_globals).expect("couldn't render posts");
-    let index_html = index_template.render(&posts_globals).expect("couldn't render index");
+    let posts_html = posts_template
+        .render(&posts_globals)
+        .expect("couldn't render posts");
+    let index_html = index_template
+        .render(&posts_globals)
+        .expect("couldn't render index");
 
     fs::write("static/index.html", &index_html).expect("failed to write index file");
     fs::write("static/posts.html", &posts_html).expect("failed to write index file");
+}
+
+fn generate_not_found(
+    parser: &liquid::Parser,
+    head_template: &liquid::Template,
+    header: &str,
+    footer_license: &str,
+) {
+    let not_found_content = include_str!("../templates/static_blocks/notfound.html");
+    let not_found = generate_generic(
+        parser,
+        head_template,
+        header,
+        footer_license,
+        &"Not Found",
+        &not_found_content,
+    );
+    fs::write("static/notfound.html", &not_found).expect("failed to write 404 file");
 }
 
 fn generate() -> Result<(), String> {
@@ -231,6 +307,7 @@ fn generate() -> Result<(), String> {
     let post_template = &parser.parse(&post_tpl).expect("couldn't parse post");
 
     generate_about(&parser, &head_template, &header, &footer_license_block);
+    generate_not_found(&parser, &head_template, &header, &footer_license_block);
 
     let md_opts = get_md_opts();
 
@@ -243,8 +320,12 @@ fn generate() -> Result<(), String> {
         .map(|md| {
             let md_txt =
                 fs::read_to_string(md.path()).expect(&format!("couldn't read md: {:?}", md));
-            let md_content = &md_txt.lines().skip(POST_HEADER_LEN).collect::<Vec<&str>>().join("\n");
-            let metadata = parse_metadata(md_txt.lines().take(POST_HEADER_LEN));
+            let metadata = Metadata::new(&md_txt);
+            let md_content = &md_txt
+                .lines()
+                .skip(Metadata::NUM_HEADER_LNS.into())
+                .collect::<Vec<&str>>()
+                .join("\n");
             let content = md_to_html(&md_content, md_opts);
             Post { metadata, content }
         })
@@ -252,9 +333,15 @@ fn generate() -> Result<(), String> {
 
     // sort posts by date descending
 
-    posts.sort_by(|a, b| a.metadata.date.cmp(&b.metadata.date).reverse());
+    posts.sort_by(|a, b| a.metadata.updated.cmp(&b.metadata.updated).reverse());
 
-    generate_index_and_posts(&parser, &head_template, &header, &footer_license_block, &posts);
+    generate_index_and_posts(
+        &parser,
+        &head_template,
+        &header,
+        &footer_license_block,
+        &posts,
+    );
 
     for (i, post) in posts.iter().enumerate() {
         let head = generate_head_block(&head_template, post.metadata.title.to_owned());
@@ -275,12 +362,9 @@ fn generate() -> Result<(), String> {
             ("content".into(), to_liquid_val(&post.content)),
             (
                 "date".into(),
-                to_liquid_val(format!("{}", post.metadata.date.format("%Y-%m-%d")))
+                to_liquid_val(format!("{}", post.metadata.updated.format("%Y-%m-%d"))),
             ),
-            (
-                "tags".into(),
-                to_liquid_val(post.metadata.tags.join(", ")),
-            ),
+            ("tags".into(), to_liquid_val(post.metadata.tags.join(", "))),
             ("footer-nav".into(), to_liquid_val(footer_nav)),
             (
                 "footer-license".into(),
@@ -308,11 +392,33 @@ fn cli<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
+fn publish() {
+    Command::new("git")
+        .args(&["-C", "static", "add", "*"])
+        .output()
+        .unwrap();
+    Command::new("git")
+        .args(&[
+            "-C",
+            "static",
+            "commit",
+            "-m",
+            &format!("{:?}", Local::now()),
+        ])
+        .output()
+        .unwrap();
+    Command::new("git")
+        .args(&["-C", "static", "push", "target", "master"])
+        .output()
+        .unwrap();
+}
+
 fn main() {
     let opts = cli();
     match opts.subcommand_name() {
         Some("run") => run(),
         Some("generate") => generate().expect("generation failed"),
+        Some("publish") => publish(),
         Some(_) => println!("??"),
         None => run(),
     }

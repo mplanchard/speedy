@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - Stacking Calls to pytest's Parametrize</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Stacking Calls to pytest’s Parametrize</h1>
+<p><strong>NB:</strong> this article was imported from <a href="https://medium.com/@mplanchard/stacking-calls-to-pytests-parametrize-d3cd4acc5611">medium</a></p>
+<p>Hopefully you’re already familiar with pytest’s fantastic <code>parametrize()</code> decorator. If not, there’s a brief summary below. If you are, skip the summary and head straight to the interesting part!</p>
+<p>Oh yeah, and remember it’s spelled parametrize (British), not parameterize (American). There has been <a href="https://github.com/pytest-dev/pytest/pull/3159">some discussion</a> about adding an alias, but until they do, you’ll have to remember the alternative spelling if you’re American!</p>
+<hr />
+<h2>Parametrize Basics</h2>
+<p>It allows you to define a series of values to be passed into your test function as parameters. Each member of the series corresponds to a new, isolated call to your test function (and each counts as its own test). Here’s a simple example:</p>
+<pre><code class="language-python">import pytest
+
+@pytest.mark.parametrize('foo', ('a', 'b'))
+def test_something(foo):
+    print(foo)
+</code></pre>
+<p>Run this with pytest <code>-sv</code> (<code>-s</code> to disable capturing stdout, <code>-v</code> for verbose mode) and you should see something like the following:</p>
+<pre><code class="language-raw">collected 2 items
+
+tests/decorators/test_generic.py::test_foo[a] a
+PASSED
+tests/decorators/test_generic.py::test_foo[b] b
+PASSED
+</code></pre>
+<p>Notice that a test was generated for each parameter, that the parameters were passed in for the <code>foo</code> variable, and that pytest was nice enough to tell you, in the verbose output, which parameters were being passed to which call.</p>
+<h2>The Problem</h2>
+<p>There are plenty of times when you want to pass multiple parametrized arguments to a test function, and sometimes, you want to ensure that each parameter for one argument gets run against each parameter for another. One way to do this is manually:</p>
+<pre><code class="language-python">import pytest
+
+@pytest.mark.parametrize('foo, bar', (
+    ('a', True),
+    ('a', False),
+    ('b', True),
+    ('b', False)
+))
+def test_multi(foo, bar):
+    print(foo, bar)
+</code></pre>
+<p>This certainly works. Running the above with pytest <code>-sv</code> yields:</p>
+<pre><code class="language-raw">collected 4 items
+
+tests/decorators/test_generic.py::test_multi[a-True] a True
+PASSED
+tests/decorators/test_generic.py::test_multi[a-False] a False
+PASSED
+tests/decorators/test_generic.py::test_multi[b-True] b True
+PASSED
+tests/decorators/test_generic.py::test_multi[b-False] b False
+PASSED
+</code></pre>
+<p>However, this starts to get pretty unwieldy when you’ve got three or more options for any of your parameters. If you’re trying to get every combination of <code>('a', 'b', 'c')</code> with <code>(True, False, None)</code> for example, you’ll need nine lines of parameter specification, and it’s pretty easy to forget one permutation or another.</p>
+<p>Another option is to use <code>itertools.product()</code>, which yields the Cartesian product of the passed iterables. In other words, <code>itertools.product(('a', 'b'), (True, False))</code> gives me an iterable over <code>[('a', True), ('a', False), ('b', True), ('b', False)]</code>. We can use this iterable in <code>parametrize()</code> to ensure we call all of our combinations. So, the following is equivalent to our “brute-force” solution above:</p>
+<pre><code class="language-python">import itertools
+import pytest
+
+@pytest.mark.parametrize(
+    'foo, bar', itertools.product(('a', 'b'), (True, False))
+)
+def test_multi(foo, bar):
+    print(foo, bar)
+</code></pre>
+<p>And indeed, this results in the same console output when run with <code>pytest -sv</code> as our previous solution. However, it harms readability. Not everyone is going to know immediately what <code>product()</code> does, after all.</p>
+<p>Luckily, there’s an even easier solution.</p>
+<h2>Parametrize Stacking</h2>
+<p>Like any well behaved decorator, <code>parametrize()</code> can be stacked with other decorators. Conveniently, it can be stacked with other calls to <code>parametrize()</code>, too! When multiple parametrize decorators are present, the function will be run with each value of each parametrization with each value of every other parametrization. So, we can implement our multiple-parameter test this way:</p>
+<pre><code class="language-python">import pytest
+
+@pytest.mark.parametrize('foo', ('a', 'b'))
+@pytest.mark.parametrize('bar', (True, False))
+def test_multi(foo, bar):
+    print(foo, bar)
+</code></pre>
+<p>So much nicer! Here’s the output:</p>
+<pre><code class="language-raw">collected 4 items
+
+tests/decorators/test_generic.py::test_multi[True-a] a True
+PASSED
+tests/decorators/test_generic.py::test_multi[True-b] b True
+PASSED
+tests/decorators/test_generic.py::test_multi[False-a] a False
+PASSED
+tests/decorators/test_generic.py::test_multi[False-b] b False
+PASSED
+</code></pre>
+<p>So, we’ve managed to replace our extremely long brute-force specification and our confusing call to <code>itertools.product()</code> with something that reads more clearly and is easier to reason about. Tangentially, it also makes for easier code reviews when new parameters are added, since each one gets its own line.</p>
+<hr />
+<p>Hopefully you’ve learned a new, interesting, and useful feature of pytest that helps you to go forth and write better tests! Maybe you think I’m crazy and that you can’t possibly get better than complex calls to <code>product()</code>. Either way, hopefully this was an enjoyable read.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2018-02-17</p>
+            <p>Tags: pytest, python, testing, parametrize</p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/gcc-on-fedora-12.html">
+            &lt previous
+        </a>
+    </div>
+    <div class="footer-nav-right">
+        <a href="/posts/boil-water-notice-tips-and-tricks.html">
+            next &gt
+        </a>
+    </div>
+</nav>
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-06-30
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-06-30 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>
