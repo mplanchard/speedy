@@ -10,6 +10,9 @@ use pulldown_cmark::{html, Options as MDOptions, Parser as MDParser};
 use warp;
 
 
+const IDX_NUM_RECENT_POSTS: u8 = 10;
+
+
 #[derive(Debug)]
 struct Metadata {
     title: String,
@@ -218,11 +221,15 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item = &'a Post>>(
     let index_tpl = include_str!("../templates/index.html");
     let posts_post_tpl = include_str!("../templates/snippets/posts-post.html");
     let posts_content_tpl = include_str!("../templates/snippets/posts-content.html");
+    let index_content_tpl = include_str!("../templates/snippets/index-content.html");
     let head = generate_head_block(&head_template, String::from("Home"));
 
     let index_template = parser
         .parse(&index_tpl)
         .expect("Couldn't parse index template");
+    let index_content_template = parser
+        .parse(&index_content_tpl)
+        .expect("Couldn't parse index content template");
     let posts_template = parser
         .parse(&posts_tpl)
         .expect("Couldn't parse posts template");
@@ -233,7 +240,7 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item = &'a Post>>(
         .parse(&posts_content_tpl)
         .expect("couldn't parse posts-content template");
 
-    let posts_items: String = posts
+    let posts_items: Vec<String> = posts
         .into_iter()
         .map(|p| {
             let globals = liquid::value::Object::from_iter(vec![
@@ -245,26 +252,47 @@ fn generate_index_and_posts<'a, P: IntoIterator<Item = &'a Post>>(
                 .render(&globals)
                 .expect(&format!("couldn't render post: {:?}", p))
         })
-        .collect::<Vec<String>>()
-        .join("\n");
+        .collect();
 
-    let posts_content_globals =
-        liquid::value::Object::from_iter(vec![("posts".into(), to_liquid_val(posts_items))]);
+    let posts_content_globals = liquid::value::Object::from_iter(vec![(
+        "posts".into(),
+        to_liquid_val(&posts_items.join("\n")),
+    )]);
     let posts_content = posts_content_tpl
         .render(&posts_content_globals)
         .expect("couldn't render posts content");
 
     let posts_globals = liquid::value::Object::from_iter(vec![
-        ("head".into(), to_liquid_val(head)),
-        ("header".into(), to_liquid_val(header)),
-        ("content".into(), to_liquid_val(posts_content)),
-        ("footer-license".into(), to_liquid_val(footer_license)),
+        ("head".into(), to_liquid_val(&head)),
+        ("header".into(), to_liquid_val(&header)),
+        ("content".into(), to_liquid_val(&posts_content)),
+        ("footer-license".into(), to_liquid_val(&footer_license)),
     ]);
     let posts_html = posts_template
         .render(&posts_globals)
         .expect("couldn't render posts");
+
+    let index_content_globals = liquid::value::Object::from_iter(vec![(
+        "posts".into(),
+        to_liquid_val(
+            &posts_items
+                .into_iter()
+                .take(IDX_NUM_RECENT_POSTS.into())
+                .collect::<Vec<String>>()
+                .join("\n"),
+        ),
+    )]);
+    let index_content = index_content_template
+        .render(&index_content_globals)
+        .expect("couldn't render posts content");
+    let index_globals = liquid::value::Object::from_iter(vec![
+        ("head".into(), to_liquid_val(&head)),
+        ("header".into(), to_liquid_val(&header)),
+        ("content".into(), to_liquid_val(&index_content)),
+        ("footer-license".into(), to_liquid_val(&footer_license)),
+    ]);
     let index_html = index_template
-        .render(&posts_globals)
+        .render(&index_globals)
         .expect("couldn't render index");
 
     fs::write("static/index.html", &index_html).expect("failed to write index file");
