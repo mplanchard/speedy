@@ -1,11 +1,13 @@
 title: Adding Support for Tags: Part 1
 slug: adding-support-for-tags-1
 created: 2019-06-30
-updated: 2019-06-30
+updated: 2019-07-01
 tags: rust, blog, programming
 summary: refactoring header parsing in preparation for tag support
 
-# Adding Tags to my Static Site
+# Adding Tags to my Static Site: Part 1
+
+For part 2, go [here](/posts/adding-support-for-tags-2.html)
 
 <aside>
 N.B. I initially intended to do this all in one go, but the first post

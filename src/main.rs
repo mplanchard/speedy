@@ -317,6 +317,61 @@ fn generate_not_found(
     fs::write("static/notfound.html", &not_found).expect("failed to write 404 file");
 }
 
+fn tag_map<'a, T>(posts: T) -> HashMap<&'a String, Vec<&'a Post>>
+where
+    T: IntoIterator<Item = &'a Post>,
+{
+    let mut tags_to_posts = HashMap::new();
+    posts.into_iter().for_each(|post| {
+        post.metadata.tags.iter().for_each(|tag| {
+            tags_to_posts
+                .entry(tag)
+                .and_modify(|post_vec: &mut Vec<&Post>| post_vec.push(post))
+                .or_insert(vec![post]);
+        });
+    });
+    tags_to_posts
+}
+
+fn generate_tags_content(
+    parser: &liquid::Parser,
+    post_template: &liquid::Template,
+    tags_to_posts: HashMap<&String, Vec<&Post>>,
+) -> String {
+    let tag_tpl = include_str!("../templates/snippets/tag-posts.html");
+    let tag_template = parser.parse(&tag_tpl).expect("Couldn't parse tag template");
+    let mut tags = tags_to_posts.keys().map(|k| *k).collect::<Vec<&String>>();
+    tags.sort();
+
+    tags.into_iter()
+        .map(|tag| {
+            let posts = tags_to_posts.get(tag).expect("Tag disappeared?");
+            let post_content = posts
+                .into_iter()
+                .map(|post| {
+                    let globals = liquid::value::Object::from_iter(vec![
+                        ("slug".into(), to_liquid_val(&post.metadata.slug)),
+                        ("title".into(), to_liquid_val(&post.metadata.title)),
+                        ("summary".into(), to_liquid_val(&post.metadata.summary)),
+                    ]);
+                    post_template
+                        .render(&globals)
+                        .expect(&format!("Could not render post: {:?}", post))
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+            let tag_globals = liquid::value::Object::from_iter(vec![
+                ("tag".into(), to_liquid_val(tag)),
+                ("posts".into(), to_liquid_val(post_content)),
+            ]);
+            tag_template
+                .render(&tag_globals)
+                .expect(&format!("Couldn't render tag: {}", tag))
+        })
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
 fn generate() -> Result<(), String> {
     let head_tpl = include_str!("../templates/snippets/head.html");
     let post_tpl = include_str!("../templates/post.html");
@@ -342,7 +397,7 @@ fn generate() -> Result<(), String> {
     let mut posts = fs::read_dir("posts")
         .expect("Couldn't read posts dir")
         .map(|r| r.expect(&"couldn't read dir entry"))
-        .filter(|de| de.file_type().unwrap().is_file())
+        .filter(|de| (&de.file_type().unwrap()).is_file())
         .filter(|de| &de.file_name().len() > &0)
         .filter(|de| &de.file_name().to_string_lossy()[0..1] != ".")
         .map(|md| {
@@ -359,9 +414,11 @@ fn generate() -> Result<(), String> {
         })
         .collect::<Vec<Post>>();
 
-    // sort posts by date descending
+    // generate map of tags to posts
+    let tags_to_posts = tag_map(&posts);
 
-    posts.sort_by(|a, b| a.metadata.updated.cmp(&b.metadata.updated).reverse());
+    // sort posts by date descending
+    posts.sort_by(|a, b| a.metadata.created.cmp(&b.metadata.created).reverse());
 
     generate_index_and_posts(
         &parser,
