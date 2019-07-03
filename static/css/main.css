@@ -14,7 +14,7 @@ body {
 header {
     width: 100%;
     font-family: 'Open Sans', sans-serif;
-    font-size: x-large;
+    font-size: large;
     display: inline-grid;
     grid-template-columns: minmax(5%, 10%) minmax(90%, 95%);
     border-bottom: 1px solid black;
@@ -108,7 +108,6 @@ cite {
 pre code {
     border: 1px solid black;
     display: block;
-    font-size: smaller;
     padding-left: 20px;
     padding-right: 20px;
 }
