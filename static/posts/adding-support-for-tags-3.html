@@ -657,6 +657,20 @@ led to the biggest improvement so far. I also took the opportunity to separate
 out rendering of HTML from writing of HTML, so there are now <code>generate_x</code>
 functions on <code>Context</code> which call <code>render_x</code> functions, and then write the
 result to a file.</p>
+<p>In addition, I was able to add a <code>pre_rendered</code> attribute to <code>Context</code>,
+which is itself a struct, the constructor of which renders the footer
+license snippet and all of the post summary snippets. This allows both
+the index and the posts page rendering methods to access that shared data.</p>
+<p>With all of this in place, I added a <code>.generate_all()</code> method to the
+<code>Context</code>, so our <code>generate()</code> entrypoint now looks like:</p>
+<pre><code class="language-rust">fn generate() {
+    let context = Context::new();
+    context.generate_all();
+}
+</code></pre>
+<p>Phew! With all that done, I think we're finally ready to render tags!</p>
+<p>That will be the subject of Part 4 (and almost certainly the final part)
+of this series.</p>
 
         <section class="post-metadata">
             <p>Last Updated: 2019-07-04</p>

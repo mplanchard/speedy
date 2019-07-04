@@ -698,6 +698,26 @@ out rendering of HTML from writing of HTML, so there are now `generate_x`
 functions on `Context` which call `render_x` functions, and then write the
 result to a file.
 
+In addition, I was able to add a `pre_rendered` attribute to `Context`,
+which is itself a struct, the constructor of which renders the footer
+license snippet and all of the post summary snippets. This allows both
+the index and the posts page rendering methods to access that shared data.
+
+With all of this in place, I added a `.generate_all()` method to the
+`Context`, so our `generate()` entrypoint now looks like:
+
+```rust
+fn generate() {
+    let context = Context::new();
+    context.generate_all();
+}
+```
+
+Phew! With all that done, I think we're finally ready to render tags!
+
+That will be the subject of Part 4 (and almost certainly the final part)
+of this series.
+
 
 [`liquid::Parser`]: (https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)
 [`liquid::Template`]: (https://docs.rs/liquid/0.18.2/liquid/struct.Template.html)

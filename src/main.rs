@@ -201,13 +201,13 @@ impl Templates {
 struct PreRenderedTemplates {
     footer_license: String,
     // Post list items, with title, summary & link
-    posts: Vec<String>,
+    post_summaries: Vec<String>,
 }
 impl PreRenderedTemplates {
     fn new(templates: &Templates, posts: &Vec<Post>) -> Self {
         PreRenderedTemplates {
             footer_license: Self::render_footer_license(&templates.snippets.footer_license),
-            posts: Self::render_posts(&templates.snippets.posts_post, posts),
+            post_summaries: Self::render_post_summaries(&templates.snippets.posts_post, posts),
         }
     }
 
@@ -220,7 +220,10 @@ impl PreRenderedTemplates {
             .expect("failed to render footer license template")
     }
 
-    fn render_posts<'a, P: IntoIterator<Item = &'a Post>>(template: &liquid::Template, posts: P) -> Vec<String> {
+    fn render_post_summaries<'a, P: IntoIterator<Item = &'a Post>>(
+        template: &liquid::Template,
+        posts: P,
+    ) -> Vec<String> {
         posts
             .into_iter()
             .map(|p| {
@@ -290,59 +293,60 @@ impl Context {
     }
 
     fn generate_about_page(&self) {
-        fs::write(
-            "static/about.html", &self.render_about_page()
-        ).expect("couldn't write about.html");
+        fs::write("static/about.html", &self.render_about_page())
+            .expect("couldn't write about.html");
     }
 
     fn generate_index_page(&self) {
-        fs::write(
-            "static/index.html", &self.render_index_page()
-        ).expect("failed to write index file");
+        fs::write("static/index.html", &self.render_index_page())
+            .expect("failed to write index file");
     }
 
     fn generate_notfound_page(&self) {
-        fs::write(
-            "static/notfound.html", &self.render_notfound_page()
-        ).expect("failed to write 404 file");
+        fs::write("static/notfound.html", &self.render_notfound_page())
+            .expect("failed to write 404 file");
     }
 
     fn generate_post_page<S: AsRef<str>, T: AsRef<str>>(&self, slug: S, content: T) {
-        fs::write(format!("static/posts/{}.html", slug.as_ref()), content.as_ref())
-            .expect(&format!("couldn't write post: {}", slug.as_ref()));
+        fs::write(
+            format!("static/posts/{}.html", slug.as_ref()),
+            content.as_ref(),
+        )
+        .expect(&format!("couldn't write post: {}", slug.as_ref()));
     }
 
     fn generate_post_pages(&self) {
         for (i, post) in self.posts.iter().enumerate() {
-            self.generate_post_page(
-                &post.metadata.slug, &self.render_post_page(i, &post)
-            )
+            self.generate_post_page(&post.metadata.slug, &self.render_post_page(i, &post))
         }
     }
 
     fn generate_posts_page(&self) {
-        fs::write(
-            "static/posts.html", &self.render_posts_page()
-        ).expect("failed to write index file");
+        fs::write("static/posts.html", &self.render_posts_page())
+            .expect("failed to write index file");
     }
 
     fn generic_globals_vec<S: AsRef<str>, T: AsRef<str>>(
-        &self, title: S, content: T
+        &self,
+        title: S,
+        content: T,
     ) -> Vec<(Cow<'static, str>, liquid::value::Value)> {
         let head = self.render_head_block(String::from(title.as_ref()));
         vec![
             ("head".into(), to_liquid_val(head)),
-            (
-                "header".into(),
-                to_liquid_val(&self.blocks.header),
-            ),
+            ("header".into(), to_liquid_val(&self.blocks.header)),
             ("content".into(), to_liquid_val(content)),
-            ("footer-license".into(), to_liquid_val(&self.pre_rendered.footer_license)),
+            (
+                "footer-license".into(),
+                to_liquid_val(&self.pre_rendered.footer_license),
+            ),
         ]
     }
 
     fn generic_globals<S: AsRef<str>, T: AsRef<str>>(
-        &self, title: S, content: T
+        &self,
+        title: S,
+        content: T,
     ) -> impl liquid::ValueStore {
         liquid::value::Object::from_iter(self.generic_globals_vec(title, content))
     }
@@ -360,18 +364,17 @@ impl Context {
 
         let globals = liquid::value::Object::from_iter(vec![
             ("head".into(), to_liquid_val(head)),
+            ("header".into(), to_liquid_val(&self.blocks.header)),
+            ("content".into(), to_liquid_val(&self.blocks.about)),
             (
-                "header".into(),
-                to_liquid_val(&self.blocks.header),
+                "footer-license".into(),
+                to_liquid_val(&self.pre_rendered.footer_license),
             ),
-            (
-                "content".into(),
-                to_liquid_val(&self.blocks.about),
-            ),
-            ("footer-license".into(), to_liquid_val(&self.pre_rendered.footer_license)),
         ]);
 
-        self.templates.pages.about
+        self.templates
+            .pages
+            .about
             .render(&globals)
             .expect("failed to render head template")
     }
@@ -386,7 +389,9 @@ impl Context {
                 ("slug".into(), to_liquid_val(s)),
                 ("description".into(), to_liquid_val(description)),
             ]);
-            self.templates.snippets.footer_nav_content
+            self.templates
+                .snippets
+                .footer_nav_content
                 .render(&globals)
                 .expect("failed to render footer nav content")
         } else {
@@ -399,8 +404,7 @@ impl Context {
         prev_slug: Option<S>,
         next_slug: Option<T>,
     ) -> String {
-        let left_content =
-            self.render_footer_inner_content_block(prev_slug, "&lt previous");
+        let left_content = self.render_footer_inner_content_block(prev_slug, "&lt previous");
         let right_content = self.render_footer_inner_content_block(next_slug, "next &gt");
 
         let footer_nav_globals = liquid::value::Object::from_iter(vec![
@@ -408,18 +412,18 @@ impl Context {
             ("right_content".into(), to_liquid_val(right_content)),
         ]);
 
-        self.templates.snippets.footer_nav
+        self.templates
+            .snippets
+            .footer_nav
             .render(&footer_nav_globals)
             .expect("failed to render footer nav template")
     }
 
-    fn render_generic_page(
-        &self,
-        title: &str,
-        content: &str,
-    ) -> String {
+    fn render_generic_page(&self, title: &str, content: &str) -> String {
         let globals = self.generic_globals(&title, &content);
-        self.templates.pages.generic
+        self.templates
+            .pages
+            .generic
             .render(&globals)
             .expect("failed to render generic template")
     }
@@ -429,7 +433,9 @@ impl Context {
             "title".into(),
             liquid::value::Value::scalar(title),
         )]);
-        self.templates.snippets.head
+        self.templates
+            .snippets
+            .head
             .render(&globals)
             .expect("failed to render head template")
     }
@@ -438,7 +444,8 @@ impl Context {
         let index_content_globals = liquid::value::Object::from_iter(vec![(
             "posts".into(),
             to_liquid_val(
-                self.pre_rendered.posts
+                self.pre_rendered
+                    .post_summaries
                     .iter()
                     .take(IDX_NUM_RECENT_POSTS.into())
                     .map(|p| p.to_owned())
@@ -446,29 +453,34 @@ impl Context {
                     .join("\n"),
             ),
         )]);
-        let index_content = self.templates.snippets.index_content
+        let index_content = self
+            .templates
+            .snippets
+            .index_content
             .render(&index_content_globals)
             .expect("couldn't render index content");
         let index_globals = self.generic_globals("Home", &index_content);
 
-        self.templates.pages.index
+        self.templates
+            .pages
+            .index
             .render(&index_globals)
             .expect("couldn't render index")
     }
 
     fn render_notfound_page(&self) -> String {
-        self.render_generic_page(
-            "Not Found",
-            &self.blocks.notfound,
-        )
+        self.render_generic_page("Not Found", &self.blocks.notfound)
     }
 
     fn render_posts_page(&self) -> String {
         let posts_content_globals = liquid::value::Object::from_iter(vec![(
             "posts".into(),
-            to_liquid_val(&self.pre_rendered.posts.join("\n")),
+            to_liquid_val(&self.pre_rendered.post_summaries.join("\n")),
         )]);
-        let posts_content = self.templates.snippets.posts_content
+        let posts_content = self
+            .templates
+            .snippets
+            .posts_content
             .render(&posts_content_globals)
             .expect("couldn't render posts content");
 
@@ -479,7 +491,9 @@ impl Context {
         // let head = self.render_head_block(post.metadata.title.to_owned());
         let footer_nav = self.render_footer_nav_block(
             // prev is next in vec
-            self.posts.get(index + 1).map(|p| p.metadata.slug.to_owned()),
+            self.posts
+                .get(index + 1)
+                .map(|p| p.metadata.slug.to_owned()),
             // next is prev in vec
             if index > 0 {
                 Some(self.posts[index - 1].metadata.slug.to_owned())
@@ -497,7 +511,9 @@ impl Context {
             ("tags".into(), to_liquid_val(post.metadata.tags.join(", "))),
         ]);
         let globals = liquid::value::Object::from_iter(globals_vec);
-        self.templates.pages.post
+        self.templates
+            .pages
+            .post
             .render(&globals)
             .expect(&format!("failed to render post: {:?}", post))
     }
@@ -550,10 +566,7 @@ where
     tags_to_posts
 }
 
-fn _generate_tags_content(
-    context: &Context,
-    tags_to_posts: HashMap<&String, Vec<&Post>>,
-) -> String {
+fn generate_tags_content(context: &Context, tags_to_posts: HashMap<&String, Vec<&Post>>) -> String {
     let mut tags = tags_to_posts.keys().map(|k| *k).collect::<Vec<&String>>();
     tags.sort();
 
@@ -568,7 +581,10 @@ fn _generate_tags_content(
                         ("title".into(), to_liquid_val(&post.metadata.title)),
                         ("summary".into(), to_liquid_val(&post.metadata.summary)),
                     ]);
-                    context.templates.snippets.posts_post
+                    context
+                        .templates
+                        .snippets
+                        .posts_post
                         .render(&globals)
                         .expect(&format!("Could not render post: {:?}", post))
                 })
@@ -578,7 +594,10 @@ fn _generate_tags_content(
                 ("tag".into(), to_liquid_val(tag)),
                 ("posts".into(), to_liquid_val(post_content)),
             ]);
-            context.templates.snippets.tag_posts
+            context
+                .templates
+                .snippets
+                .tag_posts
                 .render(&tag_globals)
                 .expect(&format!("Couldn't render tag: {}", tag))
         })
@@ -586,15 +605,9 @@ fn _generate_tags_content(
         .join("\n")
 }
 
-fn generate() -> Result<(), String> {
+fn generate() {
     let context = Context::new();
-
     context.generate_all();
-
-    // generate map of tags to posts
-    let tags_to_posts = tag_map(&context.posts);
-
-    Ok(())
 }
 
 fn run() {
@@ -634,7 +647,7 @@ fn main() {
     let opts = cli();
     match opts.subcommand_name() {
         Some("run") => run(),
-        Some("generate") => generate().expect("generation failed"),
+        Some("generate") => generate(),
         Some("publish") => publish(),
         Some(_) => println!("??"),
         None => run(),
