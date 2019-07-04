@@ -467,12 +467,12 @@ We can also go ahead and add in our pre-rendered template(s), for example
 the footer license block:
 
 ```rust
-struct RenderedTemplates {
+struct PreRenderedTemplates {
     footer_license: String,
 }
-impl RenderedTemplates {
+impl PreRenderedTemplates {
     fn new(templates: &Templates) -> Self {
-        RenderedTemplates {
+        Self {
             footer_license: Self::generate_footer_license(&templates.snippets.footer_license),
         }
     }
@@ -514,7 +514,8 @@ Now that we've got our templates strings in a global constant and our actual
 templates and blocks all stored in a `Context`, we can update most of our
 functions to simply take the `Context` object.
 
-Just as a reminder, our `generate()` function previously looked like this:
+Just as a reminder, the top of our `generate()` function previously looked
+like this:
 
 ```rust
 fn generate() -> Result<(), String> {
@@ -541,74 +542,12 @@ fn generate() -> Result<(), String> {
     generate_about(&parser, &head_template, &footer_license_block);
     generate_not_found(&parser, &head_template, &footer_license_block);
 
-    let md_opts = get_md_opts();
+    ...
 
-    let mut posts = files_from_dir("posts")
-        .map(|md| {
-            let md_txt =
-                fs::read_to_string(md.path()).expect(&format!("couldn't read md: {:?}", md));
-            let metadata = Metadata::new(&md_txt);
-            let md_content = &md_txt
-                .lines()
-                .skip(Metadata::NUM_HEADER_LNS.into())
-                .collect::<Vec<&str>>()
-                .join("\n");
-            let content = md_to_html(&md_content, md_opts);
-            Post { metadata, content }
-        })
-        .collect::<Vec<Post>>();
-
-    // generate map of tags to posts
-    let tags_to_posts = tag_map(&posts);
-
-    // sort posts by date descending
-    posts.sort_by(|a, b| a.metadata.created.cmp(&b.metadata.created).reverse());
-
-    generate_index_and_posts(&parser, &head_template, &footer_license_block, &posts);
-
-    for (i, post) in posts.iter().enumerate() {
-        let head = generate_head_block(&head_template, post.metadata.title.to_owned());
-        let footer_nav = generate_footer_nav_block(
-            &footer_nav_template,
-            &footer_nav_content_template,
-            // prev is next in vec
-            posts.get(i + 1).map(|p| p.metadata.slug.to_owned()),
-            // next is prev in vec
-            if i > 0 {
-                Some(posts[i - 1].metadata.slug.to_owned())
-            } else {
-                None
-            },
-        );
-        let globals = liquid::value::Object::from_iter(vec![
-            ("head".into(), to_liquid_val(head)),
-            (
-                "header".into(),
-                to_liquid_val(TEMPLATE_STRINGS.blocks.header),
-            ),
-            ("content".into(), to_liquid_val(&post.content)),
-            (
-                "date".into(),
-                to_liquid_val(format!("{}", post.metadata.updated.format("%Y-%m-%d"))),
-            ),
-            ("tags".into(), to_liquid_val(post.metadata.tags.join(", "))),
-            ("footer-nav".into(), to_liquid_val(footer_nav)),
-            (
-                "footer-license".into(),
-                to_liquid_val(&footer_license_block),
-            ),
-        ]);
-        let html = post_template
-            .render(&globals)
-            .expect(&format!("failed to render post: {:?}", post));
-        fs::write(format!("static/posts/{}.html", &post.metadata.slug), &html)
-            .expect(&format!("couldn't write post: {:?}", post));
-    }
-    Ok(())
 }
 ```
 
-to this:
+And now we've got:
 
 ```rust
 fn generate() -> Result<(), String> {
@@ -616,73 +555,10 @@ fn generate() -> Result<(), String> {
     generate_about(&context);
     generate_not_found(&context);
 
-    let md_opts = get_md_opts();
-
-    let mut posts = files_from_dir("posts")
-        .map(|md| {
-            let md_txt =
-                fs::read_to_string(md.path()).expect(&format!("couldn't read md: {:?}", md));
-            let metadata = Metadata::new(&md_txt);
-            let md_content = &md_txt
-                .lines()
-                .skip(Metadata::NUM_HEADER_LNS.into())
-                .collect::<Vec<&str>>()
-                .join("\n");
-            let content = md_to_html(&md_content, md_opts);
-            Post { metadata, content }
-        })
-        .collect::<Vec<Post>>();
-
-    // generate map of tags to posts
-    let tags_to_posts = tag_map(&posts);
-
-    // sort posts by date descending
-    posts.sort_by(|a, b| a.metadata.created.cmp(&b.metadata.created).reverse());
-
-    generate_index_and_posts(&context, &posts);
-
-    for (i, post) in posts.iter().enumerate() {
-        let head = generate_head_block(&context, post.metadata.title.to_owned());
-        let footer_nav = generate_footer_nav_block(
-            &context,
-            // prev is next in vec
-            posts.get(i + 1).map(|p| p.metadata.slug.to_owned()),
-            // next is prev in vec
-            if i > 0 {
-                Some(posts[i - 1].metadata.slug.to_owned())
-            } else {
-                None
-            },
-        );
-        let globals = liquid::value::Object::from_iter(vec![
-            ("head".into(), to_liquid_val(head)),
-            (
-                "header".into(),
-                to_liquid_val(TEMPLATE_STRINGS.blocks.header),
-            ),
-            ("content".into(), to_liquid_val(&post.content)),
-            (
-                "date".into(),
-                to_liquid_val(format!("{}", post.metadata.updated.format("%Y-%m-%d"))),
-            ),
-            ("tags".into(), to_liquid_val(post.metadata.tags.join(", "))),
-            ("footer-nav".into(), to_liquid_val(footer_nav)),
-            (
-                "footer-license".into(),
-                to_liquid_val(&context.rendered.footer_license),
-            ),
-        ]);
-        let html = context.templates.pages.post
-            .render(&globals)
-            .expect(&format!("failed to render post: {:?}", post));
-        fs::write(format!("static/posts/{}.html", &post.metadata.slug), &html)
-            .expect(&format!("couldn't write post: {:?}", post));
-    }
-    Ok(())
 }
 ```
 
-which is still not perfect, but much cleaner!
+Definitely much cleaner!
 
 ## Pulling functions into methods
 
@@ -698,10 +574,9 @@ out rendering of HTML from writing of HTML, so there are now `generate_x`
 functions on `Context` which call `render_x` functions, and then write the
 result to a file.
 
-In addition, I was able to add a `pre_rendered` attribute to `Context`,
-which is itself a struct, the constructor of which renders the footer
-license snippet and all of the post summary snippets. This allows both
-the index and the posts page rendering methods to access that shared data.
+In addition, I was able to populate the `pre_rendered` struct on `Context`,
+with all of the post summary snippets. This allows both the index and
+the posts page rendering methods to access that shared data.
 
 With all of this in place, I added a `.generate_all()` method to the
 `Context`, so our `generate()` entrypoint now looks like:

@@ -205,7 +205,7 @@ struct PreRenderedTemplates {
 }
 impl PreRenderedTemplates {
     fn new(templates: &Templates, posts: &Vec<Post>) -> Self {
-        PreRenderedTemplates {
+        Self {
             footer_license: Self::render_footer_license(&templates.snippets.footer_license),
             post_summaries: Self::render_post_summaries(&templates.snippets.posts_post, posts),
         }
@@ -347,7 +347,7 @@ impl Context {
         &self,
         title: S,
         content: T,
-    ) -> impl liquid::ValueStore {
+    ) -> liquid::value::Object {
         liquid::value::Object::from_iter(self.generic_globals_vec(title, content))
     }
 
@@ -361,17 +361,7 @@ impl Context {
 
     fn render_about_page(&self) -> String {
         let head = self.render_head_block(String::from("About"));
-
-        let globals = liquid::value::Object::from_iter(vec![
-            ("head".into(), to_liquid_val(head)),
-            ("header".into(), to_liquid_val(&self.blocks.header)),
-            ("content".into(), to_liquid_val(&self.blocks.about)),
-            (
-                "footer-license".into(),
-                to_liquid_val(&self.pre_rendered.footer_license),
-            ),
-        ]);
-
+        let globals = self.generic_globals("About", &self.blocks.about);
         self.templates
             .pages
             .about
