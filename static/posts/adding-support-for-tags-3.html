@@ -48,7 +48,7 @@ associated functions and methods for the <code>Metadata</code> struct, with a co
 alone or an entire markdown file and get back <code>Metadata</code>.</p>
 <p>In Part 2, we prepared for rendering our tags summary and tag views by
 writing a function that collects references to all of our posts into a
-<a href="(https://doc.rust-lang.org/std/collections/struct.HashMap.html)"><code>HashMap</code></a>, with our tags as the keys. We also wrote some simple HTML
+<a href="https://doc.rust-lang.org/std/collections/struct.HashMap.html"><code>HashMap</code></a>, with our tags as the keys. We also wrote some simple HTML
 templates that we can use to render our tags.</p>
 <p>My initial intent was to go straight from there into generating the HTML,
 but frankly the code for generating HTML pages is awfully messy. Writing
@@ -134,7 +134,7 @@ resources that are passed to all of our bespoke functions:</p>
 <p>There's no reason why we can't formalize this into a few more organized
 structs. Let's give it a shot.</p>
 <h3>Making constants constant</h3>
-<p>Something that's peppered all over the code is calls to <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a>
+<p>Something that's peppered all over the code is calls to <a href="https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html"><code>include_str!</code></a>
 to pull in our template text as <code>&amp;'static str</code> variables. This is great,
 but it does necessitate defining a bunch of variables by hand, and passing
 them around by hand where needed. If we were okay with taking a runtime
@@ -207,7 +207,7 @@ just for my website, though. I can put in the effort for better performance
 by ignoring abstractions I would need if this were a more generalized
 solution. Again, it may turn out that eventually the hassle of keeping this
 up to date is too much, but for now, it's not too bad.</p>
-<p>Now, I'll go ahead and remove all of the previously existing <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a>
+<p>Now, I'll go ahead and remove all of the previously existing <a href="https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html"><code>include_str!</code></a>
 calls, and replace references to their variables with references to this
 const. This leads to a lot of transformations of sections like:</p>
 <pre><code class="language-rust">let posts_tpl = include_str!(&quot;../templates/generic.html&quot;);
@@ -253,7 +253,7 @@ let posts_content_tpl = parser
 <code>generate_about</code>, which were previously taking a reference to the
 parsed <code>header</code> block. And finally we can delete all of the files we
 were keeping around after re-organizing the <code>templates</code> directory, since
-there are now no <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a> calls referencing them that might
+there are now no <a href="https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html"><code>include_str!</code></a> calls referencing them that might
 cause compilation to fail.</p>
 <h4>Removing footer duplication</h4>
 <p>One of the things this process helped me to realize is that I don't need
@@ -368,7 +368,7 @@ them from our template string global.</p>
 to be globally available rather than passed around all over the place,
 we can start working on wrangling the data and structs that must be
 created at runtime and which are used frequently by a variety of functions.</p>
-<p>One of these is obviously the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)"><code>liquid::Parser</code></a>. Others are the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Template.html)"><code>liquid::Template</code></a>
+<p>One of these is obviously the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html"><code>liquid::Parser</code></a>. Others are the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Template.html"><code>liquid::Template</code></a>
 instances for each of our <code>TEMPLATE_STRINGS</code>. For templated content that need only
 be rendered once and can be shared across different pages (e.g. the footer,
 which is dependent on the year but otherwise static), we may also want to
@@ -433,7 +433,7 @@ impl Context {
     }
 }
 </code></pre>
-<p>I know I said earlier that we need the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)"><code>liquid::Parser</code></a> instance everywhere,
+<p>I know I said earlier that we need the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html"><code>liquid::Parser</code></a> instance everywhere,
 but I actually think it's pretty much exclusively used to create templates.
 Since we decided to go ahead and make all the templates from the get-go,
 we can omit it from our <code>Context</code>.</p>

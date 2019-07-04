@@ -3,7 +3,7 @@ slug: adding-support-for-tags-3
 created: 2019-07-04
 updated: 2019-07-04
 tags: rust, blog, programming
-summary: actually parsing and using tags
+summary: finishing up refactoring
 
 # Adding Tags to my Static Site: Part 3
 
@@ -718,11 +718,10 @@ Phew! With all that done, I think we're finally ready to render tags!
 That will be the subject of Part 4 (and almost certainly the final part)
 of this series.
 
+[`liquid::Parser`]: https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html
+[`liquid::Template`]: https://docs.rs/liquid/0.18.2/liquid/struct.Template.html
 
-[`liquid::Parser`]: (https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)
-[`liquid::Template`]: (https://docs.rs/liquid/0.18.2/liquid/struct.Template.html)
-
-[`DirEntry`]: (https://doc.rust-lang.org/std/fs/struct.DirEntry.html)
-[`HashMap`]: (https://doc.rust-lang.org/std/collections/struct.HashMap.html)
-[`include_str!`]: (https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)
-[`Iterator`]: (https://doc.rust-lang.org/std/iter/trait.Iterator.html)
+[`DirEntry`]: https://doc.rust-lang.org/std/fs/struct.DirEntry.html
+[`HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+[`include_str!`]: https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html
+[`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
