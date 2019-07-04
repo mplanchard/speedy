@@ -66,8 +66,8 @@ fn generate_about(
 ) { ... }
 ```
 
-We're passing in a reference to a [liquid::Parser] which we use to render
-[liquid::Template] instances We pass in a reference to one such template,
+We're passing in a reference to a [liquid::Parser][liquid parser] which we use to render
+[liquid::Template][liquid template] instances We pass in a reference to one such template,
 which is used to generate the `<head>` portion of the resultant HTML. The
 `<head>` HTML is unique per page, so we can't pass in a pre-rendered HTML
 blob, but we also don't want to incur the cost of creating the template
@@ -458,7 +458,7 @@ impl Context {
 }
 ```
 
-I know I said earlier that we need the [`liquid::Parser`] instance everywhere,
+I know I said earlier that we need the [liquid::Parser][liquid parser] instance everywhere,
 but I actually think it's pretty much exclusively used to create templates.
 Since we decided to go ahead and make all the templates from the get-go,
 we can omit it from our `Context`.
@@ -718,8 +718,8 @@ Phew! With all that done, I think we're finally ready to render tags!
 That will be the subject of Part 4 (and almost certainly the final part)
 of this series.
 
-[`liquid::Parser`]: https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html
-[`liquid::Template`]: https://docs.rs/liquid/0.18.2/liquid/struct.Template.html
+[liquid parser]: https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html
+[liquid template]: https://docs.rs/liquid/0.18.2/liquid/struct.Template.html
 
 [`DirEntry`]: https://doc.rust-lang.org/std/fs/struct.DirEntry.html
 [`HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html

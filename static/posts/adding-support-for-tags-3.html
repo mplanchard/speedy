@@ -89,8 +89,8 @@ like this:</p>
     footer_license: &amp;str,
 ) { ... }
 </code></pre>
-<p>We're passing in a reference to a [liquid::Parser] which we use to render
-[liquid::Template] instances We pass in a reference to one such template,
+<p>We're passing in a reference to a <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html">liquid::Parser</a> which we use to render
+<a href="https://docs.rs/liquid/0.18.2/liquid/struct.Template.html">liquid::Template</a> instances We pass in a reference to one such template,
 which is used to generate the <code>&lt;head&gt;</code> portion of the resultant HTML. The
 <code>&lt;head&gt;</code> HTML is unique per page, so we can't pass in a pre-rendered HTML
 blob, but we also don't want to incur the cost of creating the template
@@ -368,7 +368,7 @@ them from our template string global.</p>
 to be globally available rather than passed around all over the place,
 we can start working on wrangling the data and structs that must be
 created at runtime and which are used frequently by a variety of functions.</p>
-<p>One of these is obviously the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html"><code>liquid::Parser</code></a>. Others are the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Template.html"><code>liquid::Template</code></a>
+<p>One of these is obviously the [<code>liquid::Parser</code>]. Others are the [<code>liquid::Template</code>]
 instances for each of our <code>TEMPLATE_STRINGS</code>. For templated content that need only
 be rendered once and can be shared across different pages (e.g. the footer,
 which is dependent on the year but otherwise static), we may also want to
@@ -433,7 +433,7 @@ impl Context {
     }
 }
 </code></pre>
-<p>I know I said earlier that we need the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html"><code>liquid::Parser</code></a> instance everywhere,
+<p>I know I said earlier that we need the <a href="https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html">liquid::Parser</a> instance everywhere,
 but I actually think it's pretty much exclusively used to create templates.
 Since we decided to go ahead and make all the templates from the get-go,
 we can omit it from our <code>Context</code>.</p>
