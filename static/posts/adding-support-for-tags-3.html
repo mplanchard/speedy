@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - Adding Support for Tags: Part 3</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Adding Tags to my Static Site: Part 3</h1>
+<ul>
+<li>Part 1 <a href="/posts/adding-support-for-tags-1.html">here</a></li>
+<li>Part 2 <a href="/posts/adding-support-for-tags-2.html">here</a></li>
+</ul>
+<p>To summarize what we've done so far, in Part 1 we refactored the way we were
+parsing the headers from our markdown files, pulling the functionality into
+associated functions and methods for the <code>Metadata</code> struct, with a convenient
+<code>Metadata::new()</code> implementation that allows us to pass either headers
+alone or an entire markdown file and get back <code>Metadata</code>.</p>
+<p>In Part 2, we prepared for rendering our tags summary and tag views by
+writing a function that collects references to all of our posts into a
+<a href="(https://doc.rust-lang.org/std/collections/struct.HashMap.html)"><code>HashMap</code></a>, with our tags as the keys. We also wrote some simple HTML
+templates that we can use to render our tags.</p>
+<p>My initial intent was to go straight from there into generating the HTML,
+but frankly the code for generating HTML pages is awfully messy. Writing
+functions to render some HTML requires passing in four to six parameters,
+and there are quite a few of these functions, since so far almost every
+page has gotten its own bespoke rendering function. I think we've well
+passed the <a href="https://en.wikipedia.org/wiki/Rule_of_three_(computer_programming)">Rule of Three</a>
+and that it's time to do some more refactoring.</p>
+<h2>Deciding How to Start</h2>
+<p>So, we have a few of what I consider to be smells scattered throughout
+the code:</p>
+<ul>
+<li>lots of very similar functions (indicates the potential to abstract logic)</li>
+<li>functions that take lots of parameters (indicates the ability to create
+structured objects representing common parameters)</li>
+<li>similar, if not identical, blocks of code in a variety of functions (indicates
+the potential for pulling this logic out into one shared location)</li>
+<li>Violations of the single responsibility principle (SRP), e.g. functions which
+both generate HTML and write files to the disk (indicates the opportunity
+to create smaller, dedicated functions, that may be easier to reuse)</li>
+</ul>
+<p>So, I think I'm going to proceed in this order:</p>
+<ul>
+<li>Create structs to represent common parameters</li>
+<li>Extract shared logic into dedicated functions</li>
+<li>Replace bespoke functions with calls to generic ones that conform to the SRP</li>
+</ul>
+<h2>Collecting Parameters into Structures</h2>
+<p>So, why do our functions have so many parameters? Well, largely because
+there are a lot of shared instances of parsers, templates, rendered HTML,
+etc. that it would be inefficient to make inside of each function. So, for
+example, the signature of our function to generate the <code>about.html</code> page looks
+like this:</p>
+<pre><code class="language-rust">fn generate_about(
+    parser: &amp;liquid::Parser,
+    head_template: &amp;liquid::Template,
+    header: &amp;str,
+    footer_license: &amp;str,
+) { ... }
+</code></pre>
+<p>We're passing in a reference to a [liquid::Parser] which we use to render
+[liquid::Template] instances We pass in a reference to one such template,
+which is used to generate the <code>&lt;head&gt;</code> portion of the resultant HTML. The
+<code>&lt;head&gt;</code> HTML is unique per page, so we can't pass in a pre-rendered HTML
+blob, but we also don't want to incur the cost of creating the template
+instance in every function that renders an HTML page, thus the reference.
+Finally, we also pass in reference to a pre-rendered block to go in the
+<code>&lt;header&gt;</code>, as well as the standard license notification to use as
+<code>&lt;footer&gt;</code>. These are the same on every page that uses them, so they are
+just passed as string slices. As you might imagine, the other functions
+used to generate HTML are in a similar state.</p>
+<p>Especially in a language like Rust, we need to consider the control
+flow of our code. Ideally, we make as few clones of data as possible,
+using references wherever we can. Of course, this often necessitates the
+need for lifetimes, and requires really thinking about when something will
+be defined and how long it will exist. In this case, we have a number of
+structs and data that can be created at the beginning of our application
+flow and reused throughout. Indeed, this is what the existing code is
+doing, but in a rather ad-hoc way. The <code>generate()</code> function, which is
+the entry point to HTML generation, starts out by defining a bunch of
+resources that are passed to all of our bespoke functions:</p>
+<pre><code class="language-rust">fn generate() -&gt; Result&lt;(), String&gt; {
+    let head_tpl = include_str!(&quot;../templates/snippets/head.html&quot;);
+    let post_tpl = include_str!(&quot;../templates/post.html&quot;);
+
+    let header = include_str!(&quot;../templates/static_blocks/header.html&quot;);
+
+    let parser = liquid::ParserBuilder::with_liquid()
+        .build()
+        .expect(&quot;failed to build parser&quot;);
+
+    let footer_license_block = generate_footer_license_block(&amp;parser);
+
+    let head_template = &amp;parser
+        .parse(&amp;head_tpl)
+        .expect(&quot;couldn't parse head template&quot;);
+    let post_template = &amp;parser.parse(&amp;post_tpl).expect(&quot;couldn't parse post&quot;);
+
+    ...
+
+}
+</code></pre>
+<p>There's no reason why we can't formalize this into a few more organized
+structs. Let's give it a shot.</p>
+<h3>Making constants constant</h3>
+<p>Something that's peppered all over the code is calls to <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a>
+to pull in our template text as <code>&amp;'static str</code> variables. This is great,
+but it does necessitate defining a bunch of variables by hand, and passing
+them around by hand where needed. If we were okay with taking a runtime
+hit, we could just scan our template directory and use the <a href="https://martinfowler.com/eaaCatalog/registry.html">registry pattern</a>
+to get our template text by name when we need it.</p>
+<p>I'm not sure I want to take that hit at the moment, so, for now, and unless
+it turns out later to be too much hassle, we'll stick with manually defining
+things. That being said, we <em>can</em> provide a better, unified interface:</p>
+<pre><code class="language-rust">struct TemplateBlockStrings {
+    about: &amp;'static str,
+    header: &amp;'static str,
+    notfound: &amp;'static str,
+}
+
+struct TemplatePageStrings {
+    about: &amp;'static str,
+    generic: &amp;'static str,
+    index: &amp;'static str,
+    post: &amp;'static str,
+}
+
+struct TemplateSnippetStrings {
+    footer_license: &amp;'static str,
+    footer_nav_first: &amp;'static str,
+    footer_nav_last: &amp;'static str,
+    footer_nav: &amp;'static str,
+    head: &amp;'static str,
+    index_content: &amp;'static str,
+    posts_content: &amp;'static str,
+    posts_post: &amp;'static str,
+    tag_posts: &amp;'static str,
+}
+
+struct TemplateStrings {
+    blocks: TemplateBlockStrings,
+    pages: TemplatePageStrings,
+    snippets: TemplateSnippetStrings,
+}
+
+const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
+    blocks: TemplateBlockStrings {
+        about: include_str!(&quot;../templates/blocks/about.html&quot;),
+        header: include_str!(&quot;../templates/blocks/header.html&quot;),
+        notfound: include_str!(&quot;../templates/blocks/notfound.html&quot;),
+    },
+    pages: TemplatePageStrings {
+        about: include_str!(&quot;../templates/pages/about.html&quot;),
+        generic: include_str!(&quot;../templates/pages/generic.html&quot;),
+        index: include_str!(&quot;../templates/pages/index.html&quot;),
+        post: include_str!(&quot;../templates/pages/post.html&quot;),
+    },
+    snippets: TemplateSnippetStrings {
+        footer_license: include_str!(&quot;../templates/snippets/footer-license.html&quot;),
+        footer_nav_first: include_str!(&quot;../templates/snippets/footer-nav-first.html&quot;),
+        footer_nav_last: include_str!(&quot;../templates/snippets/footer-nav-last.html&quot;),
+        footer_nav: include_str!(&quot;../templates/snippets/footer-nav.html&quot;),
+        head: include_str!(&quot;../templates/snippets/head.html&quot;),
+        index_content: include_str!(&quot;../templates/snippets/index-content.html&quot;),
+        posts_content: include_str!(&quot;../templates/snippets/posts-content.html&quot;),
+        posts_post: include_str!(&quot;../templates/snippets/posts-post.html&quot;),
+        tag_posts: include_str!(&quot;../templates/snippets/tag-posts.html&quot;),
+    },
+};
+</code></pre>
+<p>Now, our template code is available anywhere via the <code>TEMPLATE_STRINGS</code>
+constant. Yes, that block was not super fun to write (although vim makes
+it pretty easy), and yes, it will require manual updating in the future.
+I see this is one of the benefits of this system being a bespoke solution
+just for my website, though. I can put in the effort for better performance
+by ignoring abstractions I would need if this were a more generalized
+solution. Again, it may turn out that eventually the hassle of keeping this
+up to date is too much, but for now, it's not too bad.</p>
+<p>Now, I'll go ahead and remove all of the previously existing <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a>
+calls, and replace references to their variables with references to this
+const. This leads to a lot of transformations of sections like:</p>
+<pre><code class="language-rust">let posts_tpl = include_str!(&quot;../templates/generic.html&quot;);
+let index_tpl = include_str!(&quot;../templates/index.html&quot;);
+let posts_post_tpl = include_str!(&quot;../templates/snippets/posts-post.html&quot;);
+let posts_content_tpl = include_str!(&quot;../templates/snippets/posts-content.html&quot;);
+let head = generate_head_block(&amp;head_template, String::from(&quot;Home&quot;));
+
+let index_template = parser
+    .parse(&amp;index_tpl)
+    .expect(&quot;Couldn't parse index template&quot;);
+let posts_template = parser
+    .parse(&amp;posts_tpl)
+    .expect(&quot;Couldn't parse posts template&quot;);
+let posts_post_tpl = parser
+    .parse(&amp;posts_post_tpl)
+    .expect(&quot;couldn't parse posts-post template&quot;);
+let posts_content_tpl = parser
+    .parse(&amp;posts_content_tpl)
+    .expect(&quot;couldn't parse posts-content template&quot;);
+</code></pre>
+<p>to:</p>
+<pre><code class="language-rust">let head = generate_head_block(&amp;head_template, String::from(&quot;Home&quot;));
+
+let index_template = parser
+    .parse(&amp;TEMPLATE_STRINGS.pages.index)
+    .expect(&quot;Couldn't parse index template&quot;);
+let index_content_template = parser
+    .parse(&amp;TEMPLATE_STRINGS.snippets.index_content)
+    .expect(&quot;Couldn't parse index content template&quot;);
+let posts_template = parser
+    .parse(&amp;TEMPLATE_STRINGS.pages.generic)
+    .expect(&quot;Couldn't parse posts template&quot;);
+let posts_post_tpl = parser
+    .parse(&amp;TEMPLATE_STRINGS.snippets.posts_post)
+    .expect(&quot;couldn't parse posts-post template&quot;);
+let posts_content_tpl = parser
+    .parse(&amp;TEMPLATE_STRINGS.snippets.posts_content)
+    .expect(&quot;couldn't parse posts-content template&quot;);
+</code></pre>
+<p>which is much nicer.</p>
+<p>It also allows us to reduce our parameters somewhat on functions like
+<code>generate_about</code>, which were previously taking a reference to the
+parsed <code>header</code> block. And finally we can delete all of the files we
+were keeping around after re-organizing the <code>templates</code> directory, since
+there are now no <a href="(https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html)"><code>include_str!</code></a> calls referencing them that might
+cause compilation to fail.</p>
+<h4>Removing footer duplication</h4>
+<p>One of the things this process helped me to realize is that I don't need
+so much duplication of footer navigation templates. Currently, there are
+<code>footer-nav-first.html</code>, <code>footer-nav-last.html</code>, and <code>footer-nav.html</code>.
+These provide the footer navigation for the first post, the last post,
+and any post in the middle, respectively. However, they all share the
+same basic structure of two divs, with the only difference being the
+content of the divs (the <code>previous</code> section is empty for the first post,
+for example).</p>
+<p>As such, we can unify the footer nav templates into one that looks like
+this:</p>
+<pre><code class="language-html">&lt;nav class=&quot;footer-nav&quot;&gt;
+    &lt;div class=&quot;footer-nav-left&quot;&gt;
+        {{ left_content }}
+    &lt;/div&gt;
+    &lt;div class=&quot;footer-nav-right&quot;&gt;
+        {{ right_content }}
+    &lt;/div&gt;
+&lt;/nav&gt;
+</code></pre>
+<p>and then create a single snippet to use for the left/right content:</p>
+<pre><code class="language-html">&lt;a href=&quot;/posts/{{ slug }}.html&quot;&gt;
+    {{ description }}
+&lt;/a&gt;
+</code></pre>
+<p>I replaced the content of <code>footer-nav.html</code> with the former, and created
+<code>footer-nav-content.html</code> with the latter.</p>
+<p>Adding the new template necessitates updating <code>TEMPLATE_STRINGS</code> and its
+associated structs.</p>
+<p>This necessitates a slight re-working of our function for generating the
+footer nav. Currently it looks like this:</p>
+<pre><code class="language-rust">fn generate_footer_nav_block(
+    parser: &amp;liquid::Parser,
+    prev_slug: Option&lt;String&gt;,
+    next_slug: Option&lt;String&gt;,
+) -&gt; String {
+    let mut globals = liquid::value::Object::new();
+    let template: &amp;'static str;
+
+    if let Some(prev) = prev_slug {
+        globals.insert(&quot;previous&quot;.into(), to_liquid_val(prev));
+
+        if let Some(next) = next_slug {
+            globals.insert(&quot;next&quot;.into(), to_liquid_val(next));
+            template = TEMPLATE_STRINGS.snippets.footer_nav;
+        } else {
+            template = TEMPLATE_STRINGS.snippets.footer_nav_last;
+        }
+    } else {
+        if let Some(next) = next_slug {
+            globals.insert(&quot;next&quot;.into(), to_liquid_val(next));
+            template = TEMPLATE_STRINGS.snippets.footer_nav_first
+        } else {
+            template = &quot;&quot;
+        }
+    };
+
+    parser
+        .parse(&amp;template)
+        .expect(&quot;failed to parse footer nav template&quot;)
+        .render(&amp;globals)
+        .expect(&quot;failed to render footer nav template&quot;)
+}
+</code></pre>
+<p>It bases its decision on which template to use and what to put into the
+templating globals on whether there is a previous/next slug. This is fine,
+but we can simplify it with our new design:</p>
+<pre><code class="language-rust">fn generate_footer_content_block&lt;S: AsRef&lt;str&gt;, T: AsRef&lt;str&gt;&gt;(
+    template: &amp;liquid::Template,
+    slug: Option&lt;S&gt;,
+    description: T,
+) -&gt; String {
+    if let Some(s) = slug {
+        let globals = liquid::value::Object::from_iter(vec![
+            (&quot;slug&quot;.into(), to_liquid_val(s)),
+            (&quot;description&quot;.into(), to_liquid_val(description)),
+        ]);
+        template
+            .render(&amp;globals)
+            .expect(&quot;failed to render footer nav content&quot;)
+    } else {
+        &quot;&quot;.into()
+    }
+}
+
+fn generate_footer_nav_block&lt;S: AsRef&lt;str&gt;, T: AsRef&lt;str&gt;&gt;(
+    footer_nav_template: &amp;liquid::Template,
+    content_nav_template: &amp;liquid::Template,
+    prev_slug: Option&lt;S&gt;,
+    next_slug: Option&lt;T&gt;,
+) -&gt; String {
+    let left_content =
+        generate_footer_content_block(content_nav_template, prev_slug, &quot;&amp;lt previous&quot;);
+    let right_content =
+        generate_footer_content_block(content_nav_template, next_slug, &quot;next &amp;gt&quot;);
+
+    let footer_nav_globals = liquid::value::Object::from_iter(vec![
+        (&quot;left_content&quot;.into(), to_liquid_val(left_content)),
+        (&quot;right_content&quot;.into(), to_liquid_val(right_content)),
+    ]);
+
+    footer_nav_template
+        .render(&amp;footer_nav_globals)
+        .expect(&quot;failed to render footer nav template&quot;)
+}
+</code></pre>
+<p>This allows us to delete our <code>footer-nav-first/last.html</code> files and remove
+them from our template string global.</p>
+<h3>Collecting shared runtime references</h3>
+<p>Now that we handled one source of code bloat by refactoring our constants
+to be globally available rather than passed around all over the place,
+we can start working on wrangling the data and structs that must be
+created at runtime and which are used frequently by a variety of functions.</p>
+<p>One of these is obviously the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)"><code>liquid::Parser</code></a>. Others are the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Template.html)"><code>liquid::Template</code></a>
+instances for each of our <code>TEMPLATE_STRINGS</code>. For templated content that need only
+be rendered once and can be shared across different pages (e.g. the footer,
+which is dependent on the year but otherwise static), we may also want to
+include those pre-rendered strings.</p>
+<p>Let's start with structs to create and hold templates for each of our
+<code>TEMPLATE_STRINGS</code> groups. Here is a representative one for <code>PageTemplates</code>:</p>
+<pre><code class="language-rust">fn parse_template_str&lt;S: AsRef&lt;str&gt;&gt;(parser: &amp;liquid::Parser, template: S) -&gt; liquid::Template {
+    parser
+        .parse(&amp;template.as_ref())
+        .expect(&amp;format!(&quot;Couldn't parse template: {}&quot;, template.as_ref()))
+}
+
+struct PageTemplates {
+    about: liquid::Template,
+    generic: liquid::Template,
+    index: liquid::Template,
+    post: liquid::Template,
+}
+impl PageTemplates {
+    fn new(parser: &amp;liquid::Parser) -&gt; Self {
+        let parse = |template_str| parse_template_str(parser, template_str);
+        Self {
+            about: parse(TEMPLATE_STRINGS.pages.about),
+            generic: parse(TEMPLATE_STRINGS.pages.generic),
+            index: parse(TEMPLATE_STRINGS.pages.index),
+            post: parse(TEMPLATE_STRINGS.pages.post),
+        }
+    }
+}
+</code></pre>
+<p>Having done the same for snippets, we can collect the templates into their
+own struct:</p>
+<pre><code class="language-rust">struct Templates {
+    page: PageTemplates,
+    snippets: SnippetTemplates,
+}
+impl Templates {
+    fn new(parser: &amp;liquid::Parser) -&gt; Self {
+        Self {
+            page: PageTemplates::new(parser),
+            snippets: SnippetTemplates::new(parser),
+        }
+    }
+}
+</code></pre>
+<p>And then we can include these in what I'm again arbitrarily choosing to
+call a <code>Context</code> object, which will contain our globally needed values:</p>
+<pre><code class="language-rust">/// Maintain structs and data to be shared among rendering functions
+struct Context {
+    templates: Templates,
+    blocks: TemplateBlockStrings,
+}
+impl Context {
+    fn new() -&gt; Self {
+        let parser = liquid::ParserBuilder::with_liquid()
+            .build()
+            .expect(&quot;failed to build parser&quot;);
+        Self {
+            templates: Templates::new(&amp;parser),
+            blocks: TEMPLATE_STRINGS.blocks,
+        }
+    }
+}
+</code></pre>
+<p>I know I said earlier that we need the <a href="(https://docs.rs/liquid/0.18.2/liquid/struct.Parser.html)"><code>liquid::Parser</code></a> instance everywhere,
+but I actually think it's pretty much exclusively used to create templates.
+Since we decided to go ahead and make all the templates from the get-go,
+we can omit it from our <code>Context</code>.</p>
+<p>We can also go ahead and add in our pre-rendered template(s), for example
+the footer license block:</p>
+<pre><code class="language-rust">struct RenderedTemplates {
+    footer_license: String,
+}
+impl RenderedTemplates {
+    fn new(templates: &amp;Templates) -&gt; Self {
+        RenderedTemplates {
+            footer_license: Self::generate_footer_license(&amp;templates.snippets.footer_license),
+        }
+    }
+
+    fn generate_footer_license(template: &amp;liquid::Template) -&gt; String {
+        let today = format!(&quot;{}&quot;, Local::today().format(&quot;%Y-%m-%d&quot;));
+        let globals = liquid::value::Object::from_iter(vec![(&quot;year&quot;.into(), to_liquid_val(today))]);
+
+        template
+            .render(&amp;globals)
+            .expect(&quot;failed to render footer license template&quot;)
+    }
+}
+
+/// Maintain structs and data to be shared among rendering functions
+struct Context {
+    blocks: TemplateBlockStrings,
+    rendered: RenderedTemplates,
+    templates: Templates,
+}
+impl Context {
+    fn new() -&gt; Self {
+        let parser = liquid::ParserBuilder::with_liquid()
+            .build()
+            .expect(&quot;failed to build parser&quot;);
+        let templates = Templates::new(&amp;parser);
+        Self {
+            rendered: RenderedTemplates::new(&amp;templates),
+            templates: templates,
+            blocks: TEMPLATE_STRINGS.blocks,
+        }
+    }
+}
+</code></pre>
+<h3>Putting it together</h3>
+<p>Now that we've got our templates strings in a global constant and our actual
+templates and blocks all stored in a <code>Context</code>, we can update most of our
+functions to simply take the <code>Context</code> object.</p>
+<p>Just as a reminder, our <code>generate()</code> function previously looked like this:</p>
+<pre><code class="language-rust">fn generate() -&gt; Result&lt;(), String&gt; {
+
+    let parser = liquid::ParserBuilder::with_liquid()
+        .build()
+        .expect(&quot;failed to build parser&quot;);
+
+    let footer_license_block = generate_footer_license_block(&amp;parser);
+
+    let head_template = &amp;parser
+        .parse(&amp;TEMPLATE_STRINGS.snippets.head)
+        .expect(&quot;couldn't parse head template&quot;);
+    let post_template = &amp;parser
+        .parse(&amp;TEMPLATE_STRINGS.pages.post)
+        .expect(&quot;couldn't parse post&quot;);
+    let footer_nav_template = &amp;parser
+        .parse(&amp;TEMPLATE_STRINGS.snippets.footer_nav)
+        .expect(&quot;couldn't parse footer nav template&quot;);
+    let footer_nav_content_template = &amp;parser
+        .parse(&amp;TEMPLATE_STRINGS.snippets.footer_nav_content)
+        .expect(&quot;couldn't parse footer nav content template&quot;);
+
+    generate_about(&amp;parser, &amp;head_template, &amp;footer_license_block);
+    generate_not_found(&amp;parser, &amp;head_template, &amp;footer_license_block);
+
+    let md_opts = get_md_opts();
+
+    let mut posts = files_from_dir(&quot;posts&quot;)
+        .map(|md| {
+            let md_txt =
+                fs::read_to_string(md.path()).expect(&amp;format!(&quot;couldn't read md: {:?}&quot;, md));
+            let metadata = Metadata::new(&amp;md_txt);
+            let md_content = &amp;md_txt
+                .lines()
+                .skip(Metadata::NUM_HEADER_LNS.into())
+                .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+                .join(&quot;\n&quot;);
+            let content = md_to_html(&amp;md_content, md_opts);
+            Post { metadata, content }
+        })
+        .collect::&lt;Vec&lt;Post&gt;&gt;();
+
+    // generate map of tags to posts
+    let tags_to_posts = tag_map(&amp;posts);
+
+    // sort posts by date descending
+    posts.sort_by(|a, b| a.metadata.created.cmp(&amp;b.metadata.created).reverse());
+
+    generate_index_and_posts(&amp;parser, &amp;head_template, &amp;footer_license_block, &amp;posts);
+
+    for (i, post) in posts.iter().enumerate() {
+        let head = generate_head_block(&amp;head_template, post.metadata.title.to_owned());
+        let footer_nav = generate_footer_nav_block(
+            &amp;footer_nav_template,
+            &amp;footer_nav_content_template,
+            // prev is next in vec
+            posts.get(i + 1).map(|p| p.metadata.slug.to_owned()),
+            // next is prev in vec
+            if i &gt; 0 {
+                Some(posts[i - 1].metadata.slug.to_owned())
+            } else {
+                None
+            },
+        );
+        let globals = liquid::value::Object::from_iter(vec![
+            (&quot;head&quot;.into(), to_liquid_val(head)),
+            (
+                &quot;header&quot;.into(),
+                to_liquid_val(TEMPLATE_STRINGS.blocks.header),
+            ),
+            (&quot;content&quot;.into(), to_liquid_val(&amp;post.content)),
+            (
+                &quot;date&quot;.into(),
+                to_liquid_val(format!(&quot;{}&quot;, post.metadata.updated.format(&quot;%Y-%m-%d&quot;))),
+            ),
+            (&quot;tags&quot;.into(), to_liquid_val(post.metadata.tags.join(&quot;, &quot;))),
+            (&quot;footer-nav&quot;.into(), to_liquid_val(footer_nav)),
+            (
+                &quot;footer-license&quot;.into(),
+                to_liquid_val(&amp;footer_license_block),
+            ),
+        ]);
+        let html = post_template
+            .render(&amp;globals)
+            .expect(&amp;format!(&quot;failed to render post: {:?}&quot;, post));
+        fs::write(format!(&quot;static/posts/{}.html&quot;, &amp;post.metadata.slug), &amp;html)
+            .expect(&amp;format!(&quot;couldn't write post: {:?}&quot;, post));
+    }
+    Ok(())
+}
+</code></pre>
+<p>to this:</p>
+<pre><code class="language-rust">fn generate() -&gt; Result&lt;(), String&gt; {
+    let context = Context::new();
+    generate_about(&amp;context);
+    generate_not_found(&amp;context);
+
+    let md_opts = get_md_opts();
+
+    let mut posts = files_from_dir(&quot;posts&quot;)
+        .map(|md| {
+            let md_txt =
+                fs::read_to_string(md.path()).expect(&amp;format!(&quot;couldn't read md: {:?}&quot;, md));
+            let metadata = Metadata::new(&amp;md_txt);
+            let md_content = &amp;md_txt
+                .lines()
+                .skip(Metadata::NUM_HEADER_LNS.into())
+                .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+                .join(&quot;\n&quot;);
+            let content = md_to_html(&amp;md_content, md_opts);
+            Post { metadata, content }
+        })
+        .collect::&lt;Vec&lt;Post&gt;&gt;();
+
+    // generate map of tags to posts
+    let tags_to_posts = tag_map(&amp;posts);
+
+    // sort posts by date descending
+    posts.sort_by(|a, b| a.metadata.created.cmp(&amp;b.metadata.created).reverse());
+
+    generate_index_and_posts(&amp;context, &amp;posts);
+
+    for (i, post) in posts.iter().enumerate() {
+        let head = generate_head_block(&amp;context, post.metadata.title.to_owned());
+        let footer_nav = generate_footer_nav_block(
+            &amp;context,
+            // prev is next in vec
+            posts.get(i + 1).map(|p| p.metadata.slug.to_owned()),
+            // next is prev in vec
+            if i &gt; 0 {
+                Some(posts[i - 1].metadata.slug.to_owned())
+            } else {
+                None
+            },
+        );
+        let globals = liquid::value::Object::from_iter(vec![
+            (&quot;head&quot;.into(), to_liquid_val(head)),
+            (
+                &quot;header&quot;.into(),
+                to_liquid_val(TEMPLATE_STRINGS.blocks.header),
+            ),
+            (&quot;content&quot;.into(), to_liquid_val(&amp;post.content)),
+            (
+                &quot;date&quot;.into(),
+                to_liquid_val(format!(&quot;{}&quot;, post.metadata.updated.format(&quot;%Y-%m-%d&quot;))),
+            ),
+            (&quot;tags&quot;.into(), to_liquid_val(post.metadata.tags.join(&quot;, &quot;))),
+            (&quot;footer-nav&quot;.into(), to_liquid_val(footer_nav)),
+            (
+                &quot;footer-license&quot;.into(),
+                to_liquid_val(&amp;context.rendered.footer_license),
+            ),
+        ]);
+        let html = context.templates.pages.post
+            .render(&amp;globals)
+            .expect(&amp;format!(&quot;failed to render post: {:?}&quot;, post));
+        fs::write(format!(&quot;static/posts/{}.html&quot;, &amp;post.metadata.slug), &amp;html)
+            .expect(&amp;format!(&quot;couldn't write post: {:?}&quot;, post));
+    }
+    Ok(())
+}
+</code></pre>
+<p>which is still not perfect, but much cleaner!</p>
+<h2>Pulling functions into methods</h2>
+<p>As I was working on the refactoring above, I noticed that I was winding up
+with lots and lots of functions that took either solely or as their first
+parameter a <code>&amp;Context</code>. That suggests to me that they might be better
+organized into methods on the <code>Context</code> impl, where they can just use
+<code>&amp;self</code>.</p>
+<p>I'm not going to go through all of the details here, but on the whole this
+led to the biggest improvement so far. I also took the opportunity to separate
+out rendering of HTML from writing of HTML, so there are now <code>generate_x</code>
+functions on <code>Context</code> which call <code>render_x</code> functions, and then write the
+result to a file.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-07-04</p>
+            <p>Tags: rust, blog, programming</p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/adding-support-for-tags-2.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-07-04
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-07-04 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>

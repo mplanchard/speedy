@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - Adding Support for Tags: Part 2</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <!-- <li class="header-link">
+            Tags
+        </li> -->
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Adding Tags to my Static Site: Part 2</h1>
+<p>For Part 1, go <a href="/posts/adding-support-for-tags-1.html">here</a></p>
+<h2>Getting a mapping of tags to Posts</h2>
+<p>So, after part one, we have a nice <code>Metadata</code> struct for each post,
+which contains a <code>Vec&lt;String&gt;</code> of tags, which is constructed from the
+first few lines of each of our markdown files.</p>
+<p>For reference, here is our metadata struct:</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Metadata {
+    title: String,
+    slug: String,
+    created: NaiveDate,
+    updated: NaiveDate,
+    tags: Vec&lt;String&gt;,
+    summary: String,
+}
+</code></pre>
+<p>and the <code>Post</code> struct in which we might find one:</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Post {
+    metadata: Metadata,
+    content: String,
+}
+</code></pre>
+<p>We get our <code>Post</code> instances out of the markdown files using this relatively
+ugly but functional bit of code:</p>
+<pre><code class="language-rust">let mut posts = fs::read_dir(&quot;posts&quot;)
+    .expect(&quot;Couldn't read posts dir&quot;)
+    .map(|r| r.expect(&amp;&quot;couldn't read dir entry&quot;))
+    .filter(|de| (&amp;de.file_type().unwrap()).is_file())
+    .filter(|de| &amp;de.file_name().len() &gt; &amp;0)
+    .filter(|de| &amp;de.file_name().to_string_lossy()[0..1] != &quot;.&quot;)
+    .map(|md| {
+        let md_txt =
+            fs::read_to_string(md.path()).expect(&amp;format!(&quot;couldn't read md: {:?}&quot;, md));
+        let metadata = Metadata::new(&amp;md_txt);
+        let md_content = &amp;md_txt
+            .lines()
+            .skip(Metadata::NUM_HEADER_LNS.into())
+            .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+            .join(&quot;\n&quot;);
+        let content = md_to_html(&amp;md_content, md_opts);
+        Post { metadata, content }
+    })
+    .collect::&lt;Vec&lt;Post&gt;&gt;();
+</code></pre>
+<p>So, at this point, we've got every post we've ever written. For generating
+the lists of posts on the index and &quot;Posts&quot; pages, we sort the vector by
+create date:</p>
+<pre><code class="language-rust">posts.sort_by(|a, b| a.metadata.created.cmp(&amp;b.metadata.created).reverse());
+</code></pre>
+<p>For tags, though, we'll want a map of tags to posts. We should use post
+references, so that we don't need to clone the posts in memory.</p>
+<p>We can start with a simple, in-place construction of the <code>HashMap</code>:</p>
+<pre><code class="language-rust">// generate map of tags to posts
+let mut tags_to_posts = HashMap::new();
+posts.iter().for_each(|post| {
+    post.metadata.tags.iter().for_each(|tag| {
+        tags_to_posts
+            .entry(tag)
+            .and_modify(|post_vec: &amp;mut Vec&lt;&amp;Post&gt;| post_vec.push(post))
+            .or_insert(vec![post]);
+    });
+});
+</code></pre>
+<p>A few of things to note in the above implementation:</p>
+<ul>
+<li>the <a href="https://doc.rust-lang.org/std/collections/hash_m">Entry API</a> in the builtin
+HashMap collection is super cool</li>
+<li><code>posts</code> is <code>Vec&lt;Post&gt;</code>. When we call <code>.iter()</code>, we get <code>Iterable&lt;Item: &amp;Post&gt;</code>,
+i.e. an iterable over references to <code>Post</code> instances. We grab the <code>Metadata</code>
+instance from each post and call <code>.iter()</code> on its <code>.tags</code> attribute. Since
+<code>.tags</code> is <code>Vec&lt;String&gt;</code>, we get <code>Iterable&lt;Item: &amp;String&gt;</code>. So, within our
+closures, <code>post</code> and <code>tag</code> are both references, making the type of our
+map <code>HashMap&lt;&amp;String, Vec&lt;&amp;Post&gt;&gt;</code>, which is exactly what we wanted.</li>
+</ul>
+<p>Can we extract this into a function? Sure, but we're going to need to
+specify lifetimes:</p>
+<pre><code class="language-rust">fn tag_map&lt;'a, T&gt;(posts: T) -&gt; HashMap&lt;&amp;'a String, Vec&lt;&amp;'a Post&gt;&gt;
+    where T: IntoIterator&lt;Item = &amp;'a Post&gt;
+{
+    let mut tags_to_posts = HashMap::new();
+    posts.into_iter().for_each(|post| {
+        post.metadata.tags.iter().for_each(|tag| {
+            tags_to_posts
+                .entry(tag)
+                .and_modify(|post_vec: &amp;mut Vec&lt;&amp;Post&gt;| post_vec.push(post))
+                .or_insert(vec![post]);
+        });
+    });
+    tags_to_posts
+}
+</code></pre>
+<p>Here, we've said, &quot;give me any <code>posts</code> that can be turned into an <code>Iterator</code>
+over references to <code>Post</code> instances,&quot; and I'll return a <code>HashMap</code> of
+references to <code>String</code> instances pointing to vectors of references to
+<code>Post</code> instances.&quot; Because we have multiple references (and therefore
+multiple possible lifetimes), we must specify to the compiler that the
+<code>String</code> and <code>Post</code> references in the <code>HashMap</code> should live as long as
+the <code>Post</code> references on our incoming iterator, which is to say that
+it is not safe to drop the <code>Post</code>s and continue using the <code>HashMap</code>!</p>
+<p>We can then update our call site to just look like this:</p>
+<pre><code class="language-rust">let tags_to_posts = tag_map(&amp;posts);
+</code></pre>
+<p>One of the nice things about the <a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#impl-IntoIterator"><code>IntoIterator</code> implementations on <code>Vec</code></a>
+is that if you have <code>Vec&lt;T&gt;</code>, calling <code>.into_iter()</code> gives you an <code>Iterator</code>
+over <code>T</code>. Calling <code>.into_iter()</code> on a <em>reference</em> to <code>Vec&lt;T&gt;</code> gives you
+an <code>Iterator</code> over references to <code>T</code>, which is to say <code>&amp;T</code>. Finally,
+calling <code>.into_iter()</code> on a mutable reference to <code>Vec&lt;T&gt;</code> gives you
+an <code>Iterator</code> over <code>&amp;mut T</code>, mutable references to <code>T</code>. All of this means
+that we can satisfy our trait bound of <code>IntoIterator&lt;Item = &amp;Post&gt;</code> by
+passing in a <em>reference</em> to our <code>Vec&lt;Post&gt;</code>, without any further conversion
+required.</p>
+<h2>Adding HTML for the tag overview page</h2>
+<p>Now that we have a tag -&gt; post mapping, we can write some HTML. Our
+tags overview will be a combination of several snippets. The page will contain
+the usual header and footer. The content will be a listing of tags, with
+each associated post linked beneath the tag. We can reuse the simple
+<code>posts-post.html</code> snippet that we used for listing posts on the posts
+overview and index pages. It just contains a single <code>&lt;li&gt;</code> element,
+with a bolded link whose text is the post title, followed by the post
+summary. We can compose this into a tag snippet that looks something like:</p>
+<pre><code class="language-html">&lt;h4&gt;{{ tag }}&lt;/h4&gt;
+{{ posts }}
+</code></pre>
+<p>if we were using the full power of the templating engine, we could do
+some looping logic in here, but I've been having fun so far with building
+everything up in application code (we'll see how long that lasts).</p>
+<p>For now, there's no reason the tag overview can't just be an instance
+of our <code>generic.html</code> template, which looks like:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+
+{{ head }}
+
+&lt;body&gt;
+    &lt;header&gt;
+        {{ header }}
+    &lt;/header&gt;
+    &lt;main&gt;
+        {{ content }}
+    &lt;/main&gt;
+    &lt;footer&gt;
+        {{ footer-license }}
+    &lt;/footer&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+<p>I think now we have everything we need to build an initial implementation
+of the tags page, but I'm starting to feel like we need to do some refactoring
+of the post generation process. Let's make that part 3, and then we'll
+get to actually doing tags.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-07-02</p>
+            <p>Tags: rust, blog, programming</p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/adding-support-for-tags-1.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        <a href="/posts/adding-support-for-tags-3.html">
+    next &gt
+</a>
+    </div>
+</nav>
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-07-04
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-07-04 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>

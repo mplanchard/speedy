@@ -7,8 +7,6 @@ summary: refactoring header parsing in preparation for tag support
 
 # Adding Tags to my Static Site: Part 1
 
-For part 2, go [here](/posts/adding-support-for-tags-2.html)
-
 <aside>
 N.B. I initially intended to do this all in one go, but the first post
 wound up being fairly long, so I'm going to split it out into sections.
@@ -325,3 +323,7 @@ Next time, I'm going to work on automatically adding a page with a list of
 posts for each tag, a `tags.html` page with a listing of all tags, and the
 ability for any tag reference to easily point to the tag's individual
 page. Maybe that won't all be in one part, but we'll see.
+
+----
+
+For part 2, go [here](/posts/adding-support-for-tags-2.html)

@@ -3,7 +3,7 @@ slug: adding-support-for-tags-2
 created: 2019-07-02
 updated: 2019-07-02
 tags: rust, blog, programming
-summary: actually parsing and using tags
+summary: collecting tags and posts into a nice HashMap
 
 # Adding Tags to my Static Site: Part 2
 
@@ -191,5 +191,6 @@ of our `generic.html` template, which looks like:
 ```
 
 I think now we have everything we need to build an initial implementation
-of the tags page.
-
+of the tags page, but I'm starting to feel like we need to do some refactoring
+of the post generation process. Let's make that part 3, and then we'll
+get to actually doing tags.
