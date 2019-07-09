@@ -555,6 +555,7 @@ fn generate() -> Result<(), String> {
     generate_about(&context);
     generate_not_found(&context);
 
+    ...
 }
 ```
 

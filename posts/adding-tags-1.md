@@ -323,7 +323,3 @@ Next time, I'm going to work on automatically adding a page with a list of
 posts for each tag, a `tags.html` page with a listing of all tags, and the
 ability for any tag reference to easily point to the tag's individual
 page. Maybe that won't all be in one part, but we'll see.
-
-----
-
-For part 2, go [here](/posts/adding-support-for-tags-2.html)
