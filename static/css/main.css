@@ -51,7 +51,6 @@ main {
     font-family: 'Roboto Slab', serif;
     padding-bottom: 10px;
     border-bottom: 1px solid black;
-    list-style-position: inside;
 }
 
 .post-metadata {
