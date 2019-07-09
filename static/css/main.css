@@ -49,11 +49,21 @@ header a:visited {
 main {
     width: 100%;
     font-family: 'Roboto Slab', serif;
+    padding-bottom: 10px;
     border-bottom: 1px solid black;
+    list-style-position: inside;
 }
 
 .post-metadata {
     text-align: right;
+}
+
+.tag-header a {
+    text-decoration: none;
+}
+
+.tag-header a:visited {
+    color: black;
 }
 
 footer {

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+    <title>MP - Adding Support for Tags: Part 4</title>
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Adding Tags to my Static Site: Part 4</h1>
+<ul>
+<li>Part 1 <a href="/posts/adding-support-for-tags-1.html">here</a></li>
+<li>Part 2 <a href="/posts/adding-support-for-tags-2.html">here</a></li>
+<li>Part 3 <a href="/posts/adding-support-for-tags-3.html">here</a></li>
+</ul>
+<p>Alright! This is the end. In part one we did some cleanup and refactoring
+of the way we were parsing headers from our markdown blog posts. In part
+two we wrote some functionality allowing us to collect a <a href="https://doc.rust-lang.org/std/collections/struct.HashMap.html"><code>HashMap</code></a> of
+references to our <code>Post</code> objects, keyed by their tags. In part three,
+we went hog wild on the refactoring, creating a global constant with all
+of our template strings and creating a single <code>Context</code> object that we
+can use for all of our template rendering.</p>
+<p>While the refactoring in part three was definitely not necessary to
+accomplish our goals in regards to tags, it will definitely make this
+part of things easier.</p>
+<p>So, on we go.</p>
+<h2>HTML</h2>
+<p>Just as a reminder, in part two we created the following snippet, with
+the intention of using it to render a tag name with its associated
+posts:</p>
+<pre><code class="language-html">&lt;h4&gt;{{ tag }}&lt;/h4&gt;
+{{ posts }}
+</code></pre>
+<p>Let's update it a little bit to support anchor links:</p>
+<pre><code class="language-html">&lt;h4 class=&quot;tag-header&quot;&gt;
+    &lt;a id=&quot;{{ tag }}&quot; href=&quot;tags.html#{{ tag }}&quot;&gt;{{ tag }}&lt;/a&gt;
+&lt;/h4&gt;
+{{ posts }}
+</code></pre>
+<p>We can use our existing post template to fill out <code>{{ posts }}</code>:</p>
+<pre><code class="language-html">&lt;li&gt;
+    &lt;a href=&quot;/posts/{{ slug }}.html&quot;&gt;{{ title }}&lt;/a&gt;
+    &amp;mdash; {{ summary }}
+&lt;/li&gt;
+</code></pre>
+<p>We can then stick a newline-joined series of the rendered tag templates
+directly into our <code>generic.html</code> generic template:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+
+{{ head }}
+
+&lt;body&gt;
+    &lt;header&gt;
+        {{ header }}
+    &lt;/header&gt;
+    &lt;main&gt;
+        {{ content }}
+    &lt;/main&gt;
+    &lt;footer&gt;
+        {{ footer-license }}
+    &lt;/footer&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+<p>Since we have methods for easily rendering a generic page by just passing
+its title and its content, it should be easy.</p>
+<h2>Rust Prep</h2>
+<p>After the refactoring in part three, we have a collection of all of our
+<code>Post</code> instances available on the <code>Context</code> instance to use at any time.
+We also have all of our posts pre-rendered using the post template shown
+above, stored on our <code>Context.pre_rendered.post_summaries</code> attribute.</p>
+<p>Unfortunately, those summaries are just stored as a list of strings, so
+there's no way to grab them via our tag-to-post mapping. It seems like
+it might be a better idea to render our post summaries and put them
+directly on the <code>Post</code> objects with which they're associated. This should
+allow us to avoid extra rendering and keep things better encapsulated.
+The transition is easy. Currently, post summaries are created like:</p>
+<pre><code class="language-rust">struct PreRenderedTemplates {
+    footer_license: String,
+    // Post list items, with title, summary &amp; link
+    post_summaries: Vec&lt;String&gt;,
+}
+
+    ...
+
+    fn render_post_summaries&lt;'a, P: IntoIterator&lt;Item = &amp;'a Post&gt;&gt;(
+        template: &amp;liquid::Template,
+        posts: P,
+    ) -&gt; Vec&lt;String&gt; {
+        posts
+            .into_iter()
+            .map(|p| {
+                let globals = liquid::value::Object::from_iter(vec![
+                    (&quot;slug&quot;.into(), to_liquid_val(&amp;p.metadata.slug)),
+                    (&quot;title&quot;.into(), to_liquid_val(&amp;p.metadata.title)),
+                    (&quot;summary&quot;.into(), to_liquid_val(&amp;p.metadata.summary)),
+                ]);
+                template
+                    .render(&amp;globals)
+                    .expect(&amp;format!(&quot;couldn't render post: {:?}&quot;, p))
+            })
+            .collect()
+    }
+</code></pre>
+<p>There's no good reason we can't pull the map out into its own method,
+call it for each <code>Post</code> we construct, and be good to go. Let's see how
+that looks:</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Post {
+    content: String,
+    metadata: Metadata,
+    rendered_summary: String,
+}
+impl Post {
+    fn new(post_summary_template: &amp;liquid::Template, metadata: Metadata, content: String) -&gt; Self {
+        Self {
+            content,
+            rendered_summary: Self::render_summary(&amp;post_summary_template, &amp;metadata),
+            metadata,
+        }
+    }
+
+    fn render_summary(template: &amp;liquid::Template, metadata: &amp;Metadata) -&gt; String {
+        let globals = liquid::value::Object::from_iter(vec![
+            (&quot;slug&quot;.into(), to_liquid_val(&amp;metadata.slug)),
+            (&quot;title&quot;.into(), to_liquid_val(&amp;metadata.title)),
+            (&quot;summary&quot;.into(), to_liquid_val(&amp;metadata.summary)),
+        ]);
+        template
+            .render(&amp;globals)
+            .expect(&amp;format!(&quot;couldn't render post summary: {:?}&quot;, metadata))
+    }
+}
+</code></pre>
+<p>now we've got to update our <code>Post</code> construction elsewhere to use our new
+<code>new()</code> method. Since we're only actually creating posts once on our
+initial creation of the <code>Context</code> instance, this is easy. Now, when we
+instantiate our <code>Context</code> instance:</p>
+<pre><code class="language-rust">impl Context {
+    fn new() -&gt; Self {
+        let parser = liquid::ParserBuilder::with_liquid()
+            .build()
+            .expect(&quot;failed to build parser&quot;);
+        let templates = Templates::new(&amp;parser);
+        let posts = Self::collect_posts(&amp;templates.snippets.posts_post);
+        Self {
+            blocks: TEMPLATE_STRINGS.blocks,
+            pre_rendered: PreRenderedTemplates::new(&amp;templates, &amp;posts),
+            posts,
+            templates,
+        }
+    }
+</code></pre>
+<p>we have a list of posts on <code>posts</code> that also includes the pre-rendered
+summary text. We can update our renderers for the index and posts pages
+to use this new location. As is often the case in Rust, we can use the
+compiler to help us refactor. In this case, if we remove the reference
+from our <code>PreRendered</code> struct where we were previously storing rendered
+post summaries, it will be obvious where we need to update calls to
+use the new location.</p>
+<p>We're immediately directed to our <code>render_index_page</code> method on <code>Context</code>:</p>
+<pre><code class="language-rust">fn render_index_page(&amp;self) -&gt; String {
+    let index_content_globals = liquid::value::Object::from_iter(vec![(
+        &quot;posts&quot;.into(),
+        to_liquid_val(
+            self.pre_rendered
+                .post_summaries  // compiler error here
+                .iter()
+                .take(IDX_NUM_RECENT_POSTS.into())
+                .map(|p| p.as_str())
+                .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+                .join(&quot;\n&quot;),
+        ),
+    )]);
+
+    ...
+
+</code></pre>
+<p>fixing this is straightforward:</p>
+<pre><code class="language-rust">fn render_index_page(&amp;self) -&gt; String {
+    let index_content_globals = liquid::value::Object::from_iter(vec![(
+        &quot;posts&quot;.into(),
+        to_liquid_val(
+            self.posts
+                .iter()
+                .take(IDX_NUM_RECENT_POSTS.into())
+                .map(|p| p.rendered_summary.as_str())
+                .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+                .join(&quot;\n&quot;),
+        ),
+    )]);
+
+    ...
+
+</code></pre>
+<h3>An Aside on Self-Referential Structs</h3>
+<p>The next thing I wanted to do was call our <code>tags_map()</code> function from
+<a href="/posts/adding-support-for-tags-2.html">part two</a> as part of the setup of our <code>Context</code> object, that way our map
+could be used any time we need it without reconstructing it. I tried
+this:</p>
+<pre><code class="language-rust">struct Context&lt;'a&gt; {
+    blocks: TemplateBlockStrings,
+    posts: Vec&lt;Post&gt;,
+    pre_rendered: PreRenderedTemplates,
+    tag_map: HashMap&lt;&amp;'a String, Vec&lt;&amp;'a Post&gt;&gt;,
+    templates: Templates,
+}
+impl&lt;'a&gt; Context&lt;'a&gt; {
+    fn new() -&gt; Self {
+        let parser = liquid::ParserBuilder::with_liquid()
+            .build()
+            .expect(&quot;failed to build parser&quot;);
+        let templates = Templates::new(&amp;parser);
+        let posts = Self::collect_posts(&amp;templates.snippets.posts_post);
+        Self {
+            blocks: TEMPLATE_STRINGS.blocks,
+            pre_rendered: PreRenderedTemplates::new(&amp;templates, &amp;posts),
+            posts,
+            tag_map: Self::tag_map(&amp;posts),
+            templates,
+        }
+    }
+</code></pre>
+<p>but oh boy was the compiler unhappy:</p>
+<pre><code class="language-rust">error[E0515]: cannot return value referencing local variable `posts`
+   --&gt; src/main.rs:259:9
+    |
+257 |           let tag_map = Self::tag_map(&amp;posts);
+    |                                       ------ `posts` is borrowed here
+258 |           let pre_rendered = PreRenderedTemplates::new(&amp;templates, &amp;posts);
+259 | /         Self {
+260 | |             blocks: TEMPLATE_STRINGS.blocks,
+261 | |             pre_rendered,
+262 | |             tag_map: tag_map,
+263 | |             posts: posts,
+264 | |             templates,
+265 | |         }
+    | |_________^ returns a value referencing data owned by the current function
+
+error[E0505]: cannot move out of `posts` because it is borrowed
+   --&gt; src/main.rs:263:20
+    |
+250 |   impl&lt;'a&gt; Context&lt;'a&gt; {
+    |        -- lifetime `'a` defined here
+...
+257 |           let tag_map = Self::tag_map(&amp;posts);
+    |                                       ------ borrow of `posts` occurs here
+258 |           let pre_rendered = PreRenderedTemplates::new(&amp;templates, &amp;posts);
+259 | /         Self {
+260 | |             blocks: TEMPLATE_STRINGS.blocks,
+261 | |             pre_rendered,
+262 | |             tag_map: tag_map,
+263 | |             posts: posts,
+    | |                    ^^^^^ move out of `posts` occurs here
+264 | |             templates,
+265 | |         }
+    | |_________- returning this value requires that `posts` is borrowed for `'a`
+
+error: aborting due to 2 previous errors
+</code></pre>
+<p>It's essentially telling me that I can't have a reference to <code>posts</code>,
+because <code>posts</code> is getting moved out of the <code>new()</code> function, and no
+matter how I messed around with the lifetimes, I could not get tell
+the compiler that I wanted the <code>tag_map</code> to live for as long as the
+constructed instance. This led me to a <a href="https://stackoverflow.com/questions/32300132/why-cant-i-store-a-value-and-a-reference-to-that-value-in-the-same-struct">really great Stack Overflow question</a>.
+The top answer there does an excellent job of describing why this is a
+problem, even though from a naïve it seems like it shouldn't be.</p>
+<p>Basically, it's important to understand that lifetime isn't necessarily
+referring to the lifetime of the thing the reference points to. It's instead
+referring to <em>how long a reference to a given location in memory will be valid.</em>
+If we think about it this way, it makes more sense. The <strong>return value</strong> of
+the function is going to be literally moved to another location in memory
+when it's called and assigned to a value. At that point, if it contained
+an attribute that referenced a location in memory associated with the struct
+<em>during its construction</em>, that reference will no longer be valid.</p>
+<p>I highly recommend reading the top answer on that Stack Overflow question,
+as it explains the whole thing in much more detail and with examples.</p>
+<p>Ultimately, this is a great example of Rust's borrow checker saving me again
+from code that I would have thought to have been perfectly valid!</p>
+<p>So, how do we resolve the issue? I decided to make a &quot;core&quot; struct that
+would hold all of the actual values for the <code>Context</code>, which the <code>Context</code>
+could then just store references to. So, now we have <code>ContextData</code>, into
+which I've pulled the <code>collect_posts</code> logic:</p>
+<pre><code class="language-rust">struct ContextData {
+    posts: Vec&lt;Post&gt;,
+    pre_rendered: PreRenderedTemplates,
+    templates: Templates,
+}
+impl ContextData {
+    fn new() -&gt; Self {
+        let parser = liquid::ParserBuilder::with_liquid()
+            .build()
+            .expect(&quot;failed to build parser&quot;);
+        let templates = Templates::new(&amp;parser);
+        let posts = Self::collect_posts(&amp;templates.snippets.posts_post);
+        let pre_rendered = PreRenderedTemplates::new(&amp;templates);
+        ContextData { posts, pre_rendered, templates }
+    }
+
+    fn collect_posts(post_summary_template: &amp;liquid::Template) -&gt; Vec&lt;Post&gt; { ... }
+
+    ...
+}
+</code></pre>
+<p>and we've updated <code>Context</code> to hold lots of references. Note that we had to
+specify that the lifetime of the passed <code>ContextData</code> reference must be
+the same as the lifetime of the references on our struct.</p>
+<pre><code class="language-rust">/// Maintain structs and data to be shared among rendering functions
+struct Context&lt;'a&gt; {
+    blocks: TemplateBlockStrings,
+    posts: &amp;'a Vec&lt;Post&gt;,
+    pre_rendered: &amp;'a PreRenderedTemplates,
+    tag_map: HashMap&lt;&amp;'a String, Vec&lt;&amp;'a Post&gt;&gt;,
+    templates: &amp;'a Templates,
+}
+impl&lt;'a&gt; Context&lt;'a&gt; {
+    fn new(data: &amp;'a ContextData) -&gt; Self {
+        let tag_map = Self::tag_map(&amp;data.posts);
+        Self {
+            blocks: TEMPLATE_STRINGS.blocks,
+            pre_rendered: &amp;data.pre_rendered,
+            tag_map: tag_map,
+            posts: &amp;data.posts,
+            templates: &amp;data.templates,
+        }
+    }
+    ...
+}
+</code></pre>
+<p>Then we just update our <code>generate()</code> function to create the <code>ContextData</code>
+instance and pass it into the <code>Context</code> struct:</p>
+<pre><code class="language-rust">fn generate() {
+    let context_data = ContextData::new();
+    let context = Context::new(&amp;context_data);
+    context.generate_all();
+}
+</code></pre>
+<h2>Adding the Tags Page</h2>
+<p>Since we have our tag map available on our <code>Context</code> object now, we can
+go ahead and write a few functions to render the content of our tag page:</p>
+<pre><code class="language-rust">fn render_tag_for_tags_page&lt;S: AsRef&lt;str&gt;&gt;(&amp;self, tag: &amp;S) -&gt; String {
+    let posts = self.tag_map.get(tag.as_ref()).expect(&quot;Tag disappeared?&quot;);
+    let post_content = posts
+        .iter()
+        .map(|p| p.rendered_summary.as_str())
+        .collect::&lt;Vec&lt;&amp;str&gt;&gt;()
+        .join(&quot;\n&quot;);
+    let tag_globals = liquid::value::Object::from_iter(vec![
+        (&quot;tag&quot;.into(), to_liquid_val(tag)),
+        (&quot;posts&quot;.into(), to_liquid_val(post_content)),
+    ]);
+    self.templates
+        .snippets
+        .tag_posts
+        .render(&amp;tag_globals)
+        .expect(&amp;format!(&quot;Couldn't render tag: {}&quot;, tag.as_ref()))
+}
+
+fn render_tags_page_content(&amp;self) -&gt; String {
+    let mut tags = self.tag_map.keys().collect::&lt;Vec&lt;&amp;&amp;str&gt;&gt;();
+    tags.sort();
+
+    tags.into_iter()
+        .map(|t| self.render_tag_for_tags_page(t))
+        .collect::&lt;Vec&lt;String&gt;&gt;()
+        .join(&quot;\n&quot;)
+}
+
+fn render_tags_page(&amp;self) -&gt; String {
+    let tags_page_content = self.render_tags_page_content();
+    self.render_generic_page(&quot;Tags&quot;, &amp;tags_page_content)
+}
+</code></pre>
+<p>and of course we need to write it to disk:</p>
+<pre><code class="language-rust">fn generate_tags_page(&amp;self) {
+    fs::write(&quot;static/tags.html&quot;, &amp;self.render_tags_page()).expect(&quot;failed to write tags file&quot;);
+}
+</code></pre>
+<p>Done!</p>
+<h2>Linking from Posts</h2>
+<p>From here, we can also update the renderer for a given post page to not
+just show the tags for the post, but link to our anchors on our tags page!</p>
+<p>The template for a Post page looks like this:</p>
+<pre><code class="language-html">&lt;html&gt;
+
+{{ head }}
+
+&lt;body&gt;
+    &lt;header&gt;
+        {{ header }}
+    &lt;/header&gt;
+    &lt;main&gt;
+        {{ content }}
+        &lt;section class=&quot;post-metadata&quot;&gt;
+            &lt;p&gt;Last Updated: {{ date }}&lt;/p&gt;
+            &lt;p&gt;Tags: {{ tags }}&lt;/p&gt;
+        &lt;/section&gt;
+    &lt;/main&gt;
+    &lt;footer&gt;
+        {{ footer-nav }}
+        {{ footer-license }}
+    &lt;/footer&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+<p>and we're populating that with these globals, from <code>render_post_page()</code>:</p>
+<pre><code class="language-rust">let mut globals_vec = self.generic_globals_vec(&amp;post.metadata.title, &amp;post.content);
+globals_vec.extend(vec![
+    (
+        &quot;date&quot;.into(),
+        to_liquid_val(format!(&quot;{}&quot;, post.metadata.updated.format(&quot;%Y-%m-%d&quot;))),
+    ),
+    (&quot;footer-nav&quot;.into(), to_liquid_val(footer_nav)),
+    (&quot;tags&quot;.into(), to_liquid_val(post.metadata.tags.join(&quot;, &quot;))),
+]);
+</code></pre>
+<p>So, we need to replace our tags with a little link snippet, which looks like
+this:</p>
+<pre><code class="language-html">&lt;a href=&quot;/tags.html#{{ tag }}&quot;&gt;{{ tag }}&lt;/a&gt;
+</code></pre>
+<p>Write a function to render a tag link:</p>
+<pre><code class="language-rust">fn render_tag_link&lt;S: AsRef&lt;str&gt;&gt;(&amp;self, tag: &amp;S) -&gt; String {
+    let globals =
+        liquid::value::Object::from_iter(vec![(&quot;tag&quot;.into(), to_liquid_val(&amp;tag.as_ref()))]);
+    self.templates
+        .snippets
+        .tag_link
+        .render(&amp;globals)
+        .expect(&amp;format!(&quot;Couldn't render tag link: {}&quot;, tag.as_ref()))
+}
+</code></pre>
+<p>and call it when creating our globals for a given post:</p>
+<pre><code class="language-rust">globals_vec.extend(vec![
+    (
+        &quot;date&quot;.into(),
+        to_liquid_val(format!(&quot;{}&quot;, post.metadata.updated.format(&quot;%Y-%m-%d&quot;))),
+    ),
+    (&quot;footer-nav&quot;.into(), to_liquid_val(footer_nav)),
+    (
+        &quot;tags&quot;.into(),
+        to_liquid_val(
+            post.metadata.tags
+                .iter()
+                .map(|t| self.render_tag_link(&amp;t))
+                .collect::&lt;Vec&lt;String&gt;&gt;()
+                .join(&quot;, &quot;)
+        )
+    ),
+]);
+</code></pre>
+<p>We can also add in a <code>Tags</code> link to our static header content:</p>
+<pre><code class="language-html">&lt;div&gt;
+    &lt;a href=&quot;/&quot;&gt;
+        &lt;abbr title=&quot;Matthew Planchard&quot;&gt;MP&lt;/abbr&gt;
+    &lt;/a&gt;
+&lt;/div&gt;
+&lt;nav class=&quot;header-links&quot;&gt;
+    &lt;ol&gt;
+        &lt;li class=&quot;header-link&quot;&gt;
+            &lt;a href=&quot;/posts.html&quot;&gt;
+                Posts
+            &lt;/a&gt;
+        &lt;/li&gt;
+        &lt;li class=&quot;header-link&quot;&gt;
+            &lt;a href=&quot;/tags.html&quot;&gt;
+                Tags
+            &lt;/a&gt;
+        &lt;/li&gt;
+        &lt;li class=&quot;header-link&quot;&gt;
+            &lt;a href=&quot;/about.html&quot;&gt;
+                About
+            &lt;/a&gt;
+        &lt;/li&gt;
+    &lt;/ol&gt;
+&lt;/nav&gt;
+</code></pre>
+<p>Generated, checked, and functional!</p>
+<h2>Conclusion</h2>
+<p>Well, that is the end of the #tags saga, for now. This was a rather meandering
+path through lots of interesting refactors, into the depths of the Rust
+borrow checker, and finally to actually rendering some tag links. The next
+major part of the building out of the website saga will be making an
+RSS feed (yayyy, XML)!</p>
+<p>:)</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-07-08</p>
+            <p>Tags: <a href="/tags.html#rust">rust</a>, <a href="/tags.html#blog">blog</a>, <a href="/tags.html#programming">programming</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/adding-support-for-tags-3.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <details class="footer-license">
+    <summary>
+        &copy; Matthew Planchard, 2019-07-08
+        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+            (CC BY-SA 4.0)
+        </a>
+    </summary>
+    <p>
+        &copy; 2019-07-08 by Matthew Planchard &mdash; unless otherwise noted,
+        all content is made available under the
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License
+        </a>.
+    </p>
+</details>
+    </footer>
+</body>
+
+</html>

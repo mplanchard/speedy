@@ -79,8 +79,29 @@ impl Metadata {
 
 #[derive(Debug)]
 struct Post {
-    metadata: Metadata,
     content: String,
+    metadata: Metadata,
+    rendered_summary: String,
+}
+impl Post {
+    fn new(post_summary_template: &liquid::Template, metadata: Metadata, content: String) -> Self {
+        Self {
+            content,
+            rendered_summary: Self::render_summary(&post_summary_template, &metadata),
+            metadata,
+        }
+    }
+
+    fn render_summary(template: &liquid::Template, metadata: &Metadata) -> String {
+        let globals = liquid::value::Object::from_iter(vec![
+            ("slug".into(), to_liquid_val(&metadata.slug)),
+            ("title".into(), to_liquid_val(&metadata.title)),
+            ("summary".into(), to_liquid_val(&metadata.summary)),
+        ]);
+        template
+            .render(&globals)
+            .expect(&format!("couldn't render post summary: {:?}", metadata))
+    }
 }
 
 
@@ -105,6 +126,7 @@ struct TemplateSnippetStrings {
     index_content: &'static str,
     posts_content: &'static str,
     posts_post: &'static str,
+    tag_link: &'static str,
     tag_posts: &'static str,
 }
 
@@ -135,6 +157,7 @@ const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
         index_content: include_str!("../templates/snippets/index-content.html"),
         posts_content: include_str!("../templates/snippets/posts-content.html"),
         posts_post: include_str!("../templates/snippets/posts-post.html"),
+        tag_link: include_str!("../templates/snippets/tag-link.html"),
         tag_posts: include_str!("../templates/snippets/tag-posts.html"),
     },
 };
@@ -167,6 +190,7 @@ struct SnippetTemplates {
     index_content: liquid::Template,
     posts_content: liquid::Template,
     posts_post: liquid::Template,
+    tag_link: liquid::Template,
     tag_posts: liquid::Template,
 }
 impl SnippetTemplates {
@@ -180,6 +204,7 @@ impl SnippetTemplates {
             index_content: parse(TEMPLATE_STRINGS.snippets.index_content),
             posts_content: parse(TEMPLATE_STRINGS.snippets.posts_content),
             posts_post: parse(TEMPLATE_STRINGS.snippets.posts_post),
+            tag_link: parse(TEMPLATE_STRINGS.snippets.tag_link),
             tag_posts: parse(TEMPLATE_STRINGS.snippets.tag_posts),
         }
     }
@@ -200,14 +225,11 @@ impl Templates {
 
 struct PreRenderedTemplates {
     footer_license: String,
-    // Post list items, with title, summary & link
-    post_summaries: Vec<String>,
 }
 impl PreRenderedTemplates {
-    fn new(templates: &Templates, posts: &Vec<Post>) -> Self {
+    fn new(templates: &Templates) -> Self {
         Self {
             footer_license: Self::render_footer_license(&templates.snippets.footer_license),
-            post_summaries: Self::render_post_summaries(&templates.snippets.posts_post, posts),
         }
     }
 
@@ -219,51 +241,29 @@ impl PreRenderedTemplates {
             .render(&globals)
             .expect("failed to render footer license template")
     }
-
-    fn render_post_summaries<'a, P: IntoIterator<Item = &'a Post>>(
-        template: &liquid::Template,
-        posts: P,
-    ) -> Vec<String> {
-        posts
-            .into_iter()
-            .map(|p| {
-                let globals = liquid::value::Object::from_iter(vec![
-                    ("slug".into(), to_liquid_val(&p.metadata.slug)),
-                    ("title".into(), to_liquid_val(&p.metadata.title)),
-                    ("summary".into(), to_liquid_val(&p.metadata.summary)),
-                ]);
-                template
-                    .render(&globals)
-                    .expect(&format!("couldn't render post: {:?}", p))
-            })
-            .collect()
-    }
 }
 
-/// Maintain structs and data to be shared among rendering functions
-struct Context {
-    blocks: TemplateBlockStrings,
-    // All posts, sorted by date of creation descending
+struct ContextData {
     posts: Vec<Post>,
     pre_rendered: PreRenderedTemplates,
     templates: Templates,
 }
-impl Context {
+impl ContextData {
     fn new() -> Self {
         let parser = liquid::ParserBuilder::with_liquid()
             .build()
             .expect("failed to build parser");
         let templates = Templates::new(&parser);
-        let posts = Self::collect_posts();
-        Self {
-            blocks: TEMPLATE_STRINGS.blocks,
-            pre_rendered: PreRenderedTemplates::new(&templates, &posts),
-            posts: posts,
-            templates: templates,
+        let posts = Self::collect_posts(&templates.snippets.posts_post);
+        let pre_rendered = PreRenderedTemplates::new(&templates);
+        ContextData {
+            posts,
+            pre_rendered,
+            templates,
         }
     }
 
-    fn collect_posts() -> Vec<Post> {
+    fn collect_posts(post_summary_template: &liquid::Template) -> Vec<Post> {
         let md_opts = Self::get_md_opts();
         let mut posts = files_from_dir("posts")
             .map(|md| {
@@ -276,12 +276,42 @@ impl Context {
                     .collect::<Vec<&str>>()
                     .join("\n");
                 let content = md_to_html(&md_content, md_opts);
-                Post { metadata, content }
+                Post::new(&post_summary_template, metadata, content)
             })
             .collect::<Vec<Post>>();
         // sort posts by date descending
         posts.sort_by(|a, b| a.metadata.created.cmp(&b.metadata.created).reverse());
         posts
+    }
+
+    fn get_md_opts() -> MDOptions {
+        let mut options = MDOptions::empty();
+        options.insert(MDOptions::ENABLE_FOOTNOTES);
+        options.insert(MDOptions::ENABLE_TABLES);
+        options.insert(MDOptions::ENABLE_STRIKETHROUGH);
+        options
+    }
+
+}
+
+/// Maintain structs and data to be shared among rendering functions
+struct Context<'a> {
+    blocks: TemplateBlockStrings,
+    posts: &'a Vec<Post>,
+    pre_rendered: &'a PreRenderedTemplates,
+    tag_map: HashMap<&'a str, Vec<&'a Post>>,
+    templates: &'a Templates,
+}
+impl<'a> Context<'a> {
+    fn new(data: &'a ContextData) -> Self {
+        let tag_map = Self::tag_map(&data.posts);
+        Self {
+            blocks: TEMPLATE_STRINGS.blocks,
+            pre_rendered: &data.pre_rendered,
+            tag_map: tag_map,
+            posts: &data.posts,
+            templates: &data.templates,
+        }
     }
 
     fn generate_all(&self) {
@@ -290,6 +320,7 @@ impl Context {
         self.generate_notfound_page();
         self.generate_post_pages();
         self.generate_posts_page();
+        self.generate_tags_page();
     }
 
     fn generate_about_page(&self) {
@@ -326,6 +357,10 @@ impl Context {
             .expect("failed to write index file");
     }
 
+    fn generate_tags_page(&self) {
+        fs::write("static/tags.html", &self.render_tags_page()).expect("failed to write tags file");
+    }
+
     fn generic_globals_vec<S: AsRef<str>, T: AsRef<str>>(
         &self,
         title: S,
@@ -351,16 +386,7 @@ impl Context {
         liquid::value::Object::from_iter(self.generic_globals_vec(title, content))
     }
 
-    fn get_md_opts() -> MDOptions {
-        let mut options = MDOptions::empty();
-        options.insert(MDOptions::ENABLE_FOOTNOTES);
-        options.insert(MDOptions::ENABLE_TABLES);
-        options.insert(MDOptions::ENABLE_STRIKETHROUGH);
-        options
-    }
-
     fn render_about_page(&self) -> String {
-        let head = self.render_head_block(String::from("About"));
         let globals = self.generic_globals("About", &self.blocks.about);
         self.templates
             .pages
@@ -434,12 +460,11 @@ impl Context {
         let index_content_globals = liquid::value::Object::from_iter(vec![(
             "posts".into(),
             to_liquid_val(
-                self.pre_rendered
-                    .post_summaries
+                self.posts
                     .iter()
                     .take(IDX_NUM_RECENT_POSTS.into())
-                    .map(|p| p.to_owned())
-                    .collect::<Vec<String>>()
+                    .map(|p| p.rendered_summary.as_str())
+                    .collect::<Vec<&str>>()
                     .join("\n"),
             ),
         )]);
@@ -465,7 +490,14 @@ impl Context {
     fn render_posts_page(&self) -> String {
         let posts_content_globals = liquid::value::Object::from_iter(vec![(
             "posts".into(),
-            to_liquid_val(&self.pre_rendered.post_summaries.join("\n")),
+            to_liquid_val(
+                &self
+                    .posts
+                    .iter()
+                    .map(|p| p.rendered_summary.as_str())
+                    .collect::<Vec<&str>>()
+                    .join("\n"),
+            ),
         )]);
         let posts_content = self
             .templates
@@ -498,7 +530,17 @@ impl Context {
                 to_liquid_val(format!("{}", post.metadata.updated.format("%Y-%m-%d"))),
             ),
             ("footer-nav".into(), to_liquid_val(footer_nav)),
-            ("tags".into(), to_liquid_val(post.metadata.tags.join(", "))),
+            (
+                "tags".into(),
+                to_liquid_val(
+                    post.metadata
+                        .tags
+                        .iter()
+                        .map(|t| self.render_tag_link(&t))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                ),
+            ),
         ]);
         let globals = liquid::value::Object::from_iter(globals_vec);
         self.templates
@@ -506,6 +548,65 @@ impl Context {
             .post
             .render(&globals)
             .expect(&format!("failed to render post: {:?}", post))
+    }
+
+    fn render_tag_link<S: AsRef<str>>(&self, tag: &S) -> String {
+        let globals =
+            liquid::value::Object::from_iter(vec![("tag".into(), to_liquid_val(&tag.as_ref()))]);
+        self.templates
+            .snippets
+            .tag_link
+            .render(&globals)
+            .expect(&format!("Couldn't render tag link: {}", tag.as_ref()))
+    }
+
+    fn render_tag_for_tags_page<S: AsRef<str>>(&self, tag: &S) -> String {
+        let posts = self.tag_map.get(tag.as_ref()).expect("Tag disappeared?");
+        let post_content = posts
+            .iter()
+            .map(|p| p.rendered_summary.as_str())
+            .collect::<Vec<&str>>()
+            .join("\n");
+        let tag_globals = liquid::value::Object::from_iter(vec![
+            ("tag".into(), to_liquid_val(tag)),
+            ("posts".into(), to_liquid_val(post_content)),
+        ]);
+        self.templates
+            .snippets
+            .tag_posts
+            .render(&tag_globals)
+            .expect(&format!("Couldn't render tag: {}", tag.as_ref()))
+    }
+
+    fn render_tags_page_content(&self) -> String {
+        let mut tags = self.tag_map.keys().collect::<Vec<&&str>>();
+        tags.sort();
+
+        tags.into_iter()
+            .map(|t| self.render_tag_for_tags_page(t))
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
+    fn render_tags_page(&self) -> String {
+        let tags_page_content = self.render_tags_page_content();
+        self.render_generic_page("Tags", &tags_page_content)
+    }
+
+    fn tag_map<'b, T>(posts: T) -> HashMap<&'b str, Vec<&'b Post>>
+    where
+        T: IntoIterator<Item = &'b Post>,
+    {
+        let mut tags_to_posts = HashMap::new();
+        posts.into_iter().for_each(|post| {
+            post.metadata.tags.iter().for_each(|tag| {
+                tags_to_posts
+                    .entry(tag.as_str())
+                    .and_modify(|post_vec: &mut Vec<&Post>| post_vec.push(&post))
+                    .or_insert(vec![&post]);
+            });
+        });
+        tags_to_posts
     }
 }
 
@@ -540,63 +641,9 @@ fn to_liquid_val<S: AsRef<str>>(string: S) -> liquid::value::Value {
     liquid::value::Value::scalar(string.as_ref().to_owned())
 }
 
-fn tag_map<'a, T>(posts: T) -> HashMap<&'a String, Vec<&'a Post>>
-where
-    T: IntoIterator<Item = &'a Post>,
-{
-    let mut tags_to_posts = HashMap::new();
-    posts.into_iter().for_each(|post| {
-        post.metadata.tags.iter().for_each(|tag| {
-            tags_to_posts
-                .entry(tag)
-                .and_modify(|post_vec: &mut Vec<&Post>| post_vec.push(post))
-                .or_insert(vec![post]);
-        });
-    });
-    tags_to_posts
-}
-
-fn generate_tags_content(context: &Context, tags_to_posts: HashMap<&String, Vec<&Post>>) -> String {
-    let mut tags = tags_to_posts.keys().map(|k| *k).collect::<Vec<&String>>();
-    tags.sort();
-
-    tags.into_iter()
-        .map(|tag| {
-            let posts = tags_to_posts.get(tag).expect("Tag disappeared?");
-            let post_content = posts
-                .into_iter()
-                .map(|post| {
-                    let globals = liquid::value::Object::from_iter(vec![
-                        ("slug".into(), to_liquid_val(&post.metadata.slug)),
-                        ("title".into(), to_liquid_val(&post.metadata.title)),
-                        ("summary".into(), to_liquid_val(&post.metadata.summary)),
-                    ]);
-                    context
-                        .templates
-                        .snippets
-                        .posts_post
-                        .render(&globals)
-                        .expect(&format!("Could not render post: {:?}", post))
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
-            let tag_globals = liquid::value::Object::from_iter(vec![
-                ("tag".into(), to_liquid_val(tag)),
-                ("posts".into(), to_liquid_val(post_content)),
-            ]);
-            context
-                .templates
-                .snippets
-                .tag_posts
-                .render(&tag_globals)
-                .expect(&format!("Couldn't render tag: {}", tag))
-        })
-        .collect::<Vec<String>>()
-        .join("\n")
-}
-
 fn generate() {
-    let context = Context::new();
+    let context_data = ContextData::new();
+    let context = Context::new(&context_data);
     context.generate_all();
 }
 
