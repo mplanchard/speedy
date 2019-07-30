@@ -20,6 +20,11 @@ I figured that, in the spirit of this generally handcrafted blog experience,
 I might as well make it myself rather than going with some third-party
 service.
 
+As always, you can follow along with actual code changes on my [GitHub].
+Almost all of the work for this post is in [this commit](https://github.com/mplanchard/speedy/commit/183ebad6c95867e35a89e25896075adf23adb9e1)
+(note that a fair bit of it is static HTML, because I check in the artifacts
+for this blog).
+
 ## RSS or Atom
 
 One very quickly learns that there are two competing specifications in the
@@ -293,6 +298,7 @@ Rust is a great functional language! Sometimes you've got to really think
 about how to do something functional, but it's almost always possible.
 
 [Atom Specification]: https://tools.ietf.org/html/rfc4287
+[GitHub]: https://github.com/mplanchard/speedy
 [IRI Specification]: https://tools.ietf.org/html/rfc3987
 [RSS Specification]: https://cyber.harvard.edu/rss/rss.html
 [W3C Atom Intro]: https://validator.w3.org/feed/docs/atom.html
