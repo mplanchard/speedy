@@ -121,7 +121,7 @@ assures uniqueness.</p>
 </blockquote>
 <p>That description, along with their example ID of
 <code>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</code>, got me going down a bit
-of a rabbit hole of trying to figure out how to hash the slug and
+of a rabbit hole of trying to figure out how to hash a post's slug and
 represent it as an IRI, but the <a href="https://validator.w3.org/feed/docs/atom.html">w3c validator introduction to atom</a>
 makes things a lot less scary:</p>
 <blockquote>
@@ -284,8 +284,42 @@ functionally!</p>
 I honestly don't think I could have written something like this in Python,
 which has been my primary language at work for five years, and gotten it
 to work without extensive testing and tweaking.</p>
-<p>From there, it's just a matter of adding links to the RSS feed from the
+<p>Also, not to rag on python, but the fact that you cannot unpack tuple
+values into named arguments in Python 3 is a <em>constant</em> source of
+frustration. Consider just wanting to map over a dictionary's items to
+combine keys with their values (for whatever reason):</p>
+<pre><code class="language-py">the_dict = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+assert tuple(
+    map(
+        lambda i: f&quot;{i[0]}{i[1]}&quot;,
+        the_dict.items()
+    )
+) == (&quot;a1&quot;, &quot;b2&quot;)
+</code></pre>
+<p>I know, Python people will say &quot;just use a comprehension,&quot; but when you use
+functional paradigms in literally every other language, it's often easier
+to think in terms of <code>map</code>, <code>filter</code>, and <code>reduce</code>.</p>
+<p>It would be much nicer if you could do something like you can in Rust:</p>
+<pre><code class="language-py">the_dict = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+assert tuple(
+    map(
+        lambda (key, value): f&quot;{key}{value}&quot;,
+        the_dict.items()
+    )
+) == (&quot;a1&quot;, &quot;b2&quot;)
+</code></pre>
+<p>What's crazy is you <em>used</em> to be able to do this in Python 2, and they
+removed it!</p>
+<p>Anyway, Python rant over.  Now that we've got our atom feed rendering
+properly, it's just a matter of adding links to the RSS feed from the
 main page!</p>
+<p>I added a general link in the bottom left, in the footer that's common
+to every page. The link text is &quot;RSS&quot;, even though this is an atom feed,
+because I think &quot;RSS&quot; is a clearer indicator of intent, like Kleenex :)</p>
+<p>I also added a <code>&lt;link&gt;</code> tag to the <code>head.html</code> snippet that looks like
+this, to make the feed more discoverable for any automated tooling:</p>
+<pre><code class="language-html">&lt;link rel=&quot;feed&quot; type=&quot;application/atom+xml&quot; title=&quot;RSS Feed&quot; href=&quot;/atom.xml&quot;&gt;
+</code></pre>
 <h2>Conclusions</h2>
 <p>The <a href="https://tools.ietf.org/html/rfc4287">atom specification</a> is thorough and easy to follow, although you'll
 probably still want some extra resources (like the <a href="https://validator.w3.org/feed/docs/atom.html">W3C atom intro</a>) for

@@ -93,7 +93,7 @@ The [atom specification] has this to say about the ID element:
 
 That description, along with their example ID of
 `urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a`, got me going down a bit
-of a rabbit hole of trying to figure out how to hash the slug and
+of a rabbit hole of trying to figure out how to hash a post's slug and
 represent it as an IRI, but the [w3c validator introduction to atom][w3c atom intro]
 makes things a lot less scary:
 
@@ -279,8 +279,54 @@ I honestly don't think I could have written something like this in Python,
 which has been my primary language at work for five years, and gotten it
 to work without extensive testing and tweaking.
 
-From there, it's just a matter of adding links to the RSS feed from the
+Also, not to rag on python, but the fact that you cannot unpack tuple
+values into named arguments in Python 3 is a _constant_ source of
+frustration. Consider just wanting to map over a dictionary's items to
+combine keys with their values (for whatever reason):
+
+```py
+the_dict = {"a": 1, "b": 2}
+assert tuple(
+    map(
+        lambda i: f"{i[0]}{i[1]}",
+        the_dict.items()
+    )
+) == ("a1", "b2")
+```
+
+I know, Python people will say "just use a comprehension," but when you use
+functional paradigms in literally every other language, it's often easier
+to think in terms of `map`, `filter`, and `reduce`.
+
+It would be much nicer if you could do something like you can in Rust:
+
+```py
+the_dict = {"a": 1, "b": 2}
+assert tuple(
+    map(
+        lambda (key, value): f"{key}{value}",
+        the_dict.items()
+    )
+) == ("a1", "b2")
+```
+
+What's crazy is you _used_ to be able to do this in Python 2, and they
+removed it!
+
+Anyway, Python rant over.  Now that we've got our atom feed rendering
+properly, it's just a matter of adding links to the RSS feed from the
 main page!
+
+I added a general link in the bottom left, in the footer that's common
+to every page. The link text is "RSS", even though this is an atom feed,
+because I think "RSS" is a clearer indicator of intent, like Kleenex :)
+
+I also added a `<link>` tag to the `head.html` snippet that looks like
+this, to make the feed more discoverable for any automated tooling:
+
+```html
+<link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+```
 
 ## Conclusions
 
