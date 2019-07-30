@@ -9,6 +9,7 @@
     <meta name="author" content="Matthew Planchard">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
 
@@ -305,7 +306,7 @@ matter how I messed around with the lifetimes, I could not get tell
 the compiler that I wanted the <code>tag_map</code> to live for as long as the
 constructed instance. This led me to a <a href="https://stackoverflow.com/questions/32300132/why-cant-i-store-a-value-and-a-reference-to-that-value-in-the-same-struct">really great Stack Overflow question</a>.
 The top answer there does an excellent job of describing why this is a
-problem, even though from a naïve it seems like it shouldn't be.</p>
+problem, even though from a naïve perspective it seems like it shouldn't be.</p>
 <p>Basically, it's important to understand that lifetime isn't necessarily
 referring to the lifetime of the thing the reference points to. It's instead
 referring to <em>how long a reference to a given location in memory will be valid.</em>
@@ -526,7 +527,7 @@ RSS feed (yayyy, XML)!</p>
 <p>:)</p>
 
         <section class="post-metadata">
-            <p>Last Updated: 2019-07-08</p>
+            <p>Last Updated: 2019-07-16</p>
             <p>Tags: <a href="/tags.html#rust">rust</a>, <a href="/tags.html#blog">blog</a>, <a href="/tags.html#programming">programming</a></p>
         </section>
     </main>
@@ -538,24 +539,37 @@ RSS feed (yayyy, XML)!</p>
 </a>
     </div>
     <div class="footer-nav-right">
-        
+        <a href="/posts/creating-an-rss-feed.html">
+    next &gt
+</a>
     </div>
 </nav>
-        <details class="footer-license">
-    <summary>
-        &copy; Matthew Planchard, 2019-07-08
-        <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
-            (CC BY-SA 4.0)
-        </a>
-    </summary>
-    <p>
-        &copy; 2019-07-08 by Matthew Planchard &mdash; unless otherwise noted,
-        all content is made available under the
-        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
-            Creative Commons Attribution-ShareAlike 4.0 International License
-        </a>.
-    </p>
-</details>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2019-07-30
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
     </footer>
 </body>
 

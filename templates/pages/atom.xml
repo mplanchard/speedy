@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+    <title>Matthew Planchard's Blog</title>
+    <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
+    <link href="https://blog.mplanchard.com/"/>
+    <updated>{{ updated }}</updated>
+    <author>
+        <name>Matthew Planchard</name>
+    </author>
+    <id>https://blog.mplanchard.com/</id>
+
+    {{ entries }}
+
+</feed>

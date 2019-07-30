@@ -1,0 +1,7 @@
+<entry>
+    <title>{{ title }}</title>
+    <link href="{{ link }}"/>
+    <id>{{ link }}</id>
+    <updated>{{ updated }}</updated>
+    <summary>{{ summary }}</summary>
+</entry>

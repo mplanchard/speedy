@@ -1,12 +1,9 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::ffi::OsString;
-use std::fmt;
 use std::fs;
 use std::iter::FromIterator;
-use std::process::Command;
 
-use chrono::{Local, NaiveDate};
+use chrono::{DateTime, Local, NaiveDate, Utc};
 use clap::{App, ArgMatches, SubCommand};
 use liquid;
 use pulldown_cmark::{html, Options as MDOptions, Parser as MDParser};
@@ -14,6 +11,7 @@ use warp;
 
 
 const IDX_NUM_RECENT_POSTS: u8 = 10;
+const URL_BASE: &'static str = "https://blog.mplanchard.com";
 
 
 #[derive(Debug)]
@@ -82,13 +80,16 @@ struct Post {
     content: String,
     metadata: Metadata,
     rendered_summary: String,
+    url: String,
 }
 impl Post {
     fn new(post_summary_template: &liquid::Template, metadata: Metadata, content: String) -> Self {
+        let url = format!("{}/posts/{}", URL_BASE, &metadata.slug);
         Self {
             content,
             rendered_summary: Self::render_summary(&post_summary_template, &metadata),
             metadata,
+            url,
         }
     }
 
@@ -102,6 +103,7 @@ impl Post {
             .render(&globals)
             .expect(&format!("couldn't render post summary: {:?}", metadata))
     }
+
 }
 
 
@@ -113,13 +115,15 @@ struct TemplateBlockStrings {
 
 struct TemplatePageStrings {
     about: &'static str,
+    atom: &'static str,
     generic: &'static str,
     index: &'static str,
     post: &'static str,
 }
 
 struct TemplateSnippetStrings {
-    footer_license: &'static str,
+    atom_entry: &'static str,
+    footer_common: &'static str,
     footer_nav_content: &'static str,
     footer_nav: &'static str,
     head: &'static str,
@@ -145,12 +149,14 @@ const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
     },
     pages: TemplatePageStrings {
         about: include_str!("../templates/pages/about.html"),
+        atom: include_str!("../templates/pages/atom.xml"),
         generic: include_str!("../templates/pages/generic.html"),
         index: include_str!("../templates/pages/index.html"),
         post: include_str!("../templates/pages/post.html"),
     },
     snippets: TemplateSnippetStrings {
-        footer_license: include_str!("../templates/snippets/footer-license.html"),
+        atom_entry: include_str!("../templates/snippets/atom-entry.xml"),
+        footer_common: include_str!("../templates/snippets/footer-common.html"),
         footer_nav_content: include_str!("../templates/snippets/footer-nav-content.html"),
         footer_nav: include_str!("../templates/snippets/footer-nav.html"),
         head: include_str!("../templates/snippets/head.html"),
@@ -165,6 +171,7 @@ const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
 
 struct PageTemplates {
     about: liquid::Template,
+    atom: liquid::Template,
     generic: liquid::Template,
     index: liquid::Template,
     post: liquid::Template,
@@ -174,6 +181,7 @@ impl PageTemplates {
         let parse = |template_str| parse_template_str(parser, template_str);
         Self {
             about: parse(TEMPLATE_STRINGS.pages.about),
+            atom: parse(TEMPLATE_STRINGS.pages.atom),
             generic: parse(TEMPLATE_STRINGS.pages.generic),
             index: parse(TEMPLATE_STRINGS.pages.index),
             post: parse(TEMPLATE_STRINGS.pages.post),
@@ -183,7 +191,8 @@ impl PageTemplates {
 
 
 struct SnippetTemplates {
-    footer_license: liquid::Template,
+    atom_entry: liquid::Template,
+    footer_common: liquid::Template,
     footer_nav_content: liquid::Template,
     footer_nav: liquid::Template,
     head: liquid::Template,
@@ -197,7 +206,8 @@ impl SnippetTemplates {
     fn new(parser: &liquid::Parser) -> Self {
         let parse = |template_str| parse_template_str(parser, template_str);
         Self {
-            footer_license: parse(TEMPLATE_STRINGS.snippets.footer_license),
+            atom_entry: parse(TEMPLATE_STRINGS.snippets.atom_entry),
+            footer_common: parse(TEMPLATE_STRINGS.snippets.footer_common),
             footer_nav_content: parse(TEMPLATE_STRINGS.snippets.footer_nav_content),
             footer_nav: parse(TEMPLATE_STRINGS.snippets.footer_nav),
             head: parse(TEMPLATE_STRINGS.snippets.head),
@@ -224,16 +234,16 @@ impl Templates {
 }
 
 struct PreRenderedTemplates {
-    footer_license: String,
+    footer_common: String,
 }
 impl PreRenderedTemplates {
     fn new(templates: &Templates) -> Self {
         Self {
-            footer_license: Self::render_footer_license(&templates.snippets.footer_license),
+            footer_common: Self::render_footer_common(&templates.snippets.footer_common),
         }
     }
 
-    fn render_footer_license(template: &liquid::Template) -> String {
+    fn render_footer_common(template: &liquid::Template) -> String {
         let today = format!("{}", Local::today().format("%Y-%m-%d"));
         let globals = liquid::value::Object::from_iter(vec![("year".into(), to_liquid_val(today))]);
 
@@ -316,6 +326,7 @@ impl<'a> Context<'a> {
 
     fn generate_all(&self) {
         self.generate_about_page();
+        self.generate_atom_page();
         self.generate_index_page();
         self.generate_notfound_page();
         self.generate_post_pages();
@@ -326,6 +337,10 @@ impl<'a> Context<'a> {
     fn generate_about_page(&self) {
         fs::write("static/about.html", &self.render_about_page())
             .expect("couldn't write about.html");
+    }
+
+    fn generate_atom_page(&self) {
+        fs::write("static/atom.xml", &self.render_atom_page()).expect("couldn't write atom.xml");
     }
 
     fn generate_index_page(&self) {
@@ -372,8 +387,8 @@ impl<'a> Context<'a> {
             ("header".into(), to_liquid_val(&self.blocks.header)),
             ("content".into(), to_liquid_val(content)),
             (
-                "footer-license".into(),
-                to_liquid_val(&self.pre_rendered.footer_license),
+                "footer-common".into(),
+                to_liquid_val(&self.pre_rendered.footer_common),
             ),
         ]
     }
@@ -393,6 +408,55 @@ impl<'a> Context<'a> {
             .about
             .render(&globals)
             .expect("failed to render head template")
+    }
+
+    fn updated_datetime_str(date: &NaiveDate) -> String {
+        DateTime::<Utc>::from_utc(date.and_hms(0, 0, 0), Utc).to_rfc3339()
+    }
+
+    fn render_atom_entry(&self, post: &Post) -> String {
+        let globals = liquid::value::Object::from_iter(vec![
+            ("title".into(), to_liquid_val(&post.metadata.title)),
+            ("link".into(), to_liquid_val(&post.url)),
+            (
+                "updated".into(),
+                to_liquid_val(Self::updated_datetime_str(&post.metadata.updated)),
+            ),
+            ("summary".into(), to_liquid_val(&post.metadata.summary)),
+        ]);
+        self.templates
+            .snippets
+            .atom_entry
+            .render(&globals)
+            .expect(&format!("failed to reader atom entry for {:?}", post))
+    }
+
+    fn render_atom_page(&self) -> String {
+        let (updated, entries) = self.posts.iter().fold(
+            (NaiveDate::from_ymd(1, 1, 1), String::new()),
+            |(newest_date, entries), post| {
+                (
+                    if post.metadata.updated > newest_date {
+                        post.metadata.updated
+                    } else {
+                        newest_date
+                    },
+                    [entries, self.render_atom_entry(post)].join("\n"),
+                )
+            },
+        );
+        let globals = liquid::value::Object::from_iter(vec![
+            (
+                "updated".into(),
+                to_liquid_val(Self::updated_datetime_str(&updated)),
+            ),
+            ("entries".into(), to_liquid_val(entries)),
+        ]);
+        self.templates
+            .pages
+            .atom
+            .render(&globals)
+            .expect("failed to render atom feed")
     }
 
     fn render_footer_inner_content_block<S: AsRef<str>, T: AsRef<str>>(
@@ -659,33 +723,11 @@ fn cli<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
-fn publish() {
-    Command::new("git")
-        .args(&["-C", "static", "add", "*"])
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(&[
-            "-C",
-            "static",
-            "commit",
-            "-m",
-            &format!("{:?}", Local::now()),
-        ])
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(&["-C", "static", "push", "target", "master"])
-        .output()
-        .unwrap();
-}
-
 fn main() {
     let opts = cli();
     match opts.subcommand_name() {
         Some("run") => run(),
         Some("generate") => generate(),
-        Some("publish") => publish(),
         Some(_) => println!("??"),
         None => run(),
     }

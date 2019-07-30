@@ -1,7 +1,7 @@
 title: Adding Support for Tags: Part 4
 slug: adding-support-for-tags-4
 created: 2019-07-08
-updated: 2019-07-08
+updated: 2019-07-16
 tags: rust, blog, programming
 summary: actually generating tag content
 
@@ -306,7 +306,7 @@ matter how I messed around with the lifetimes, I could not get tell
 the compiler that I wanted the `tag_map` to live for as long as the
 constructed instance. This led me to a [really great Stack Overflow question](https://stackoverflow.com/questions/32300132/why-cant-i-store-a-value-and-a-reference-to-that-value-in-the-same-struct).
 The top answer there does an excellent job of describing why this is a
-problem, even though from a naïve it seems like it shouldn't be.
+problem, even though from a naïve perspective it seems like it shouldn't be.
 
 Basically, it's important to understand that lifetime isn't necessarily
 referring to the lifetime of the thing the reference points to. It's instead

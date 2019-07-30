@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - Creating an RSS (Atom) Feed</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1>Creating an RSS (Atom) Feed</h1>
+<p>The main way that I keep up with blogs is through RSS. I have been using
+the excellent <a href="https://reederapp.com/">Reeder</a> since whenever Google Reader
+shut down, with <a href="https://feedly.com/i/welcome">Feedly</a> as the backend.
+Naturally, I therefore would like for my own blog to have an
+RSS feed. This serves two purposes: one, it helps any interested people to
+keep up with the blog, and two, if I put it in my feed, it will give me
+a second opportunity to proofread things that I post.</p>
+<p>This post will follow the process of making an RSS feed from scratch.
+I figured that, in the spirit of this generally handcrafted blog experience,
+I might as well make it myself rather than going with some third-party
+service.</p>
+<h2>RSS or Atom</h2>
+<p>One very quickly learns that there are two competing specifications in the
+real simple syndication world. <a href="https://cyber.harvard.edu/rss/rss.html">RSS 2.0</a>, published in
+2003, was the successor to the original RSS specification and was the
+dominant player prior to <a href="https://tools.ietf.org/html/rfc4287">Atom</a>, published in 2005 with
+what seems to my uneducated eye to be a bit more of a formal specification.</p>
+<p>Web searches like &quot;rss vs atom&quot; aren't particularly enlightening as to what
+might lead one to pick one or the other feed format, although it does
+seem to be a topic that several blog-related companies have written fluff
+pieces about in order to improve their SEO, which I will refrain from linking
+here. Fluff aside, I did manage to find a <a href="https://github.com/jekyll/jekyll-feed/issues/2">more substantive discussion</a>
+on the <a href="https://github.com/jekyll/jekyll-feed">jekyll-feed GitHub repository</a>.
+There's also <a href="https://nullprogram.com/blog/2013/09/23/">this post from the <em>null program</em> blog</a>,
+which looks at some of the details about the pain points in the <a href="https://cyber.harvard.edu/rss/rss.html">RSS specification</a>
+as compared to the <a href="https://tools.ietf.org/html/rfc4287">Atom specification</a>. There's also a <a href="https://wordpress.stackexchange.com/questions/2922/should-i-provide-rss-or-atom-feeds">question from 2010</a>
+on the Wordpress StackExchange.</p>
+<p>From reading through those links, what I've gathered is mostly that:</p>
+<ul>
+<li>Basically any feed aggregator/reader supports both Atom and RSS feeds</li>
+<li>Publishing podcasts on iTunes requires an RSS feed</li>
+<li>The Atom specification is more well defined and by most accounts easier
+to work with</li>
+</ul>
+<p>Given all of that, I think that I'll probably start with Atom, and then
+potentially add an RSS feed as well later on.</p>
+<h2>Implementing Atom</h2>
+<p>I started out by reading the <a href="https://tools.ietf.org/html/rfc4287">Atom specification</a>, which is actually quite
+an easy read. It gives some examples of Atom documents, one of which I
+copied over to form the base of my template. From there, I started reading
+up on the definitions for the various elements of the specification. There
+are top-level metadata attributes that can be specified for a feed, most
+of which are fairly straightforward (<code>author</code>, <code>title</code>, <code>updated</code>, etc.).
+Feed entries are specified in an <code>entry</code> element, which contains information
+about the individual entry.</p>
+<h3>Unique IDs</h3>
+<p>One of the components of the Atom specification is that each entry have
+a unique ID. This honestly isn't something I planned for when I was
+originally coding the site, because none of the content exists in a
+database. However, there is an assumption that each blog post's slug
+will be unique, since the slugs are used as the path in the URL.</p>
+<p>The <a href="https://tools.ietf.org/html/rfc4287">atom specification</a> has this to say about the ID element:</p>
+<blockquote>
+<p>Its content MUST be an IRI, as defined by [RFC3987].  Note that the
+definition of &quot;IRI&quot; excludes relative references.  Though the IRI
+might use a dereferencable scheme, Atom Processors MUST NOT assume it
+can be dereferenced.</p>
+<p>When an Atom Document is relocated, migrated, syndicated,
+republished, exported, or imported, the content of its atom:id
+element MUST NOT change.  Put another way, an atom:id element
+pertains to all instantiations of a particular Atom entry or feed;
+revisions retain the same content in their atom:id elements.  It is
+suggested that the atom:id element be stored along with the
+associated resource.</p>
+<p>The content of an atom:id element MUST be created in a way that
+assures uniqueness.</p>
+</blockquote>
+<p>That description, along with their example ID of
+<code>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</code>, got me going down a bit
+of a rabbit hole of trying to figure out how to hash the slug and
+represent it as an IRI, but the <a href="https://validator.w3.org/feed/docs/atom.html">w3c validator introduction to atom</a>
+makes things a lot less scary:</p>
+<blockquote>
+<p>Identifies the entry using a universally unique and permanent URI.
+Suggestions on how to make a good id can be found here. Two entries in
+a feed can have the same value for id if they represent the same entry
+at different points in time.</p>
+</blockquote>
+<p>Their example ID is just <code>&lt;id&gt;http://example.com/blog/1234&lt;/id&gt;</code>. Since
+we have unique URIs for our posts, we can just use those. Phew!</p>
+<h3>Templates</h3>
+<p>Atom's a pretty simple format, so we just need two templates, one for the
+page and another for entries:</p>
+<pre><code class="language-html">&lt;!-- atom.xml --&gt;
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;feed xmlns=&quot;http://www.w3.org/2005/Atom&quot;&gt;
+
+    &lt;title&gt;Matthew Planchard's Blog&lt;/title&gt;
+    &lt;link rel=&quot;self&quot; href=&quot;https://blog.mplanchard.com/atom.xml&quot;/&gt;
+    &lt;link href=&quot;https://blog.mplanchard.com/&quot;/&gt;
+    &lt;updated&gt;{{ updated }}&lt;/updated&gt;
+    &lt;author&gt;
+        &lt;name&gt;Matthew Planchard&lt;/name&gt;
+    &lt;/author&gt;
+    &lt;id&gt;https://blog.mplanchard.com/&lt;/id&gt;
+
+    {{ entries }}
+
+&lt;/feed&gt;
+</code></pre>
+<pre><code class="language-html">&lt;!-- atom-entry.xml --&gt;
+
+&lt;entry&gt;
+    &lt;title&gt;{{ title }}&lt;/title&gt;
+    &lt;link href=&quot;{{ link }}&quot;/&gt;
+    &lt;id&gt;{{ link }}&lt;/id&gt;
+    &lt;updated&gt;{{ updated }}&lt;/updated&gt;
+    &lt;summary&gt;{{ summary }}&lt;/summary&gt;
+&lt;/entry&gt;
+</code></pre>
+<h3>The Rust!</h3>
+<p>With all of the refactoring we did as part of
+<a href="/posts/adding-support-for-tags-1.html">adding tag support</a>, this is
+pretty easy.</p>
+<p>First, we add our page template to our
+<a href="https://github.com/mplanchard/speedy/blob/ed60e0eb767a60e1371401b0741c2add86d01b08/src/main.rs#L114-L119"><code>TemplatePageStrings</code> struct</a>
+and its <a href="https://github.com/mplanchard/speedy/blob/ed60e0eb767a60e1371401b0741c2add86d01b08/src/main.rs#L146-L151">const instance</a>,
+and add a parser to our <code>PageTemplates</code> struct:</p>
+<pre><code class="language-rust">struct TemplatePageStrings {
+    about: &amp;'static str,
+    atom: &amp;'static str,
+    generic: &amp;'static str,
+    index: &amp;'static str,
+    post: &amp;'static str,
+}
+// ...
+const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
+    // ...
+    pages: TemplatePageStrings {
+        about: include_str!(&quot;../templates/pages/about.html&quot;),
+        atom: include_str!(&quot;../templates/pages/atom.xml&quot;),
+        generic: include_str!(&quot;../templates/pages/generic.html&quot;),
+        index: include_str!(&quot;../templates/pages/index.html&quot;),
+        post: include_str!(&quot;../templates/pages/post.html&quot;),
+    },
+
+    // ...
+struct PageTemplates {
+    about: liquid::Template,
+    atom: liquid::Template,
+    generic: liquid::Template,
+    index: liquid::Template,
+    post: liquid::Template,
+}
+impl PageTemplates {
+    fn new(parser: &amp;liquid::Parser) -&gt; Self {
+        let parse = |template_str| parse_template_str(parser, template_str);
+        Self {
+            about: parse(TEMPLATE_STRINGS.pages.about),
+            atom: parse(TEMPLATE_STRINGS.pages.atom),
+            generic: parse(TEMPLATE_STRINGS.pages.generic),
+            index: parse(TEMPLATE_STRINGS.pages.index),
+            post: parse(TEMPLATE_STRINGS.pages.post),
+        }
+    }
+}
+</code></pre>
+<p>As a side note, we might eventually do a post on macros to make it easier
+to get these templates made :)</p>
+<p>From there, we do the same thing for the snippet template in its struct
+and instance, although I won't bore you with that.</p>
+<p>We need to add two rendering methods to the <code>Context</code> struct, one for
+atom entries and another for the atom page. The first looks like this:</p>
+<pre><code class="language-rust">impl&lt;'a&gt; Context&lt;'a&gt; {
+    // ...
+    fn render_atom_entry(&amp;self, post: &amp;Post) -&gt; String {
+        let globals = liquid::value::Object::from_iter(vec![
+            (&quot;title&quot;.into(), to_liquid_val(&amp;post.metadata.title)),
+            (&quot;link&quot;.into(), to_liquid_val(&amp;post.url)),
+            (
+                &quot;updated&quot;.into(), to_liquid_val(
+                    DateTime::&lt;Utc&gt;::from_utc(
+                        post.metadata.updated.and_hms(0, 0, 0), Utc
+                    ).to_rfc3339())
+            ),
+            (&quot;summary&quot;.into(), to_liquid_val(&amp;post.metadata.summary)),
+        ]);
+        self.templates
+            .snippets
+            .atom_entry
+            .render(&amp;globals)
+            .expect(&amp;format!(&quot;failed to reader atom entry for {:?}&quot;, post))
+    }
+    // ...
+</code></pre>
+<p>Because I only store the date of the last update, and the atom spec wants
+a datetime, I decided just to represent it as the time at midnight UTC,
+for entirely arbitrary reasons.</p>
+<p>Rendering a <em>page</em> is a little more complicated, at least if we want to
+avoid adding multiple iterations through our posts. This is because one
+of the things that the spec reuqires is an <code>&lt;updated&gt;</code> tag for the feed
+as a whole. This is fine, because I store this information, but the posts
+are stored in the <code>Context</code> struct in order by creation date. So, I need
+to iterate over them, get the most recent update date, and also render
+them all into <code>atom-entry</code> format, ideally all in one loop, and ideally
+functionally!</p>
+<p>I wound up doing this by bifurcating the result of a <code>.fold()</code>:</p>
+<pre><code class="language-rust">    fn render_atom_page(&amp;self) -&gt; String {
+        // Get the most recently updated entry and a string of rendered
+        // &lt;entry&gt; documents, separated by newlines.
+        let (updated, entries) = self.posts.iter().fold(
+            (NaiveDate::from_ymd(1, 1, 1), String::new()),
+            |(newest_date, entries), post| {
+                (
+                    if post.metadata.updated &gt; newest_date {
+                        post.metadata.updated
+                    } else {
+                        newest_date
+                    },
+                    [entries, self.render_atom_entry(post)].join(&quot;\n&quot;),
+                )
+            },
+        );
+        let globals = liquid::value::Object::from_iter(vec![
+            (
+                &quot;updated&quot;.into(),
+                to_liquid_val(Self::updated_datetime_str(&amp;updated)),
+            ),
+            (&quot;entries&quot;.into(), to_liquid_val(entries)),
+        ]);
+        self.templates
+            .pages
+            .atom
+            .render(&amp;globals)
+            .expect(&quot;failed to render atom feed&quot;)
+    }
+</code></pre>
+<p>Amazingly, once the compiler was satisfied, this worked on the first try!
+I honestly don't think I could have written something like this in Python,
+which has been my primary language at work for five years, and gotten it
+to work without extensive testing and tweaking.</p>
+<p>From there, it's just a matter of adding links to the RSS feed from the
+main page!</p>
+<h2>Conclusions</h2>
+<p>The <a href="https://tools.ietf.org/html/rfc4287">atom specification</a> is thorough and easy to follow, although you'll
+probably still want some extra resources (like the <a href="https://validator.w3.org/feed/docs/atom.html">W3C atom intro</a>) for
+when you get confused.</p>
+<p>The architecture of my site generator is coming along nicely. There's still
+a fair bit of what feels like busy work when adding a new template, because
+it needs to be added in one way or another in three separate places.
+Making this smoother with a macro or something similar might be the focus
+of a future piece.</p>
+<p>Rust is a great functional language! Sometimes you've got to really think
+about how to do something functional, but it's almost always possible.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2019-07-30</p>
+            <p>Tags: <a href="/tags.html#rust">rust</a>, <a href="/tags.html#rss">rss</a>, <a href="/tags.html#programming">programming</a>, <a href="/tags.html#blog">blog</a>, <a href="/tags.html#atom">atom</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/adding-support-for-tags-4.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2019-07-30
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>
