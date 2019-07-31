@@ -84,7 +84,7 @@ struct Post {
 }
 impl Post {
     fn new(post_summary_template: &liquid::Template, metadata: Metadata, content: String) -> Self {
-        let url = format!("{}/posts/{}", URL_BASE, &metadata.slug);
+        let url = format!("{}/posts/{}.html", URL_BASE, &metadata.slug);
         Self {
             content,
             rendered_summary: Self::render_summary(&post_summary_template, &metadata),

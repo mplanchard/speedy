@@ -13,72 +13,72 @@
     
 <entry>
     <title>Creating an RSS (Atom) Feed</title>
-    <link href="https://blog.mplanchard.com/posts/creating-an-rss-feed"/>
-    <id>https://blog.mplanchard.com/posts/creating-an-rss-feed</id>
+    <link href="https://blog.mplanchard.com/posts/creating-an-rss-feed.html"/>
+    <id>https://blog.mplanchard.com/posts/creating-an-rss-feed.html</id>
     <updated>2019-07-30T00:00:00+00:00</updated>
     <summary>creating an RSS (Atom) feed from scratch</summary>
 </entry>
 
 <entry>
     <title>Adding Support for Tags: Part 4</title>
-    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-4"/>
-    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-4</id>
+    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-4.html"/>
+    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-4.html</id>
     <updated>2019-07-16T00:00:00+00:00</updated>
     <summary>actually generating tag content</summary>
 </entry>
 
 <entry>
     <title>Adding Support for Tags: Part 3</title>
-    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-3"/>
-    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-3</id>
+    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-3.html"/>
+    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-3.html</id>
     <updated>2019-07-04T00:00:00+00:00</updated>
     <summary>finishing up refactoring</summary>
 </entry>
 
 <entry>
     <title>Adding Support for Tags: Part 2</title>
-    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-2"/>
-    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-2</id>
+    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-2.html"/>
+    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-2.html</id>
     <updated>2019-07-02T00:00:00+00:00</updated>
     <summary>collecting tags and posts into a nice HashMap</summary>
 </entry>
 
 <entry>
     <title>Adding Support for Tags: Part 1</title>
-    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-1"/>
-    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-1</id>
+    <link href="https://blog.mplanchard.com/posts/adding-support-for-tags-1.html"/>
+    <id>https://blog.mplanchard.com/posts/adding-support-for-tags-1.html</id>
     <updated>2019-07-01T00:00:00+00:00</updated>
     <summary>refactoring header parsing in preparation for tag support</summary>
 </entry>
 
 <entry>
     <title>Why Bother?</title>
-    <link href="https://blog.mplanchard.com/posts/why-bother"/>
-    <id>https://blog.mplanchard.com/posts/why-bother</id>
+    <link href="https://blog.mplanchard.com/posts/why-bother.html"/>
+    <id>https://blog.mplanchard.com/posts/why-bother.html</id>
     <updated>2019-06-29T00:00:00+00:00</updated>
     <summary>Why bother having a custom blog at all?</summary>
 </entry>
 
 <entry>
     <title>Boil Water Notice - Tips and Tricks</title>
-    <link href="https://blog.mplanchard.com/posts/boil-water-notice-tips-and-tricks"/>
-    <id>https://blog.mplanchard.com/posts/boil-water-notice-tips-and-tricks</id>
+    <link href="https://blog.mplanchard.com/posts/boil-water-notice-tips-and-tricks.html"/>
+    <id>https://blog.mplanchard.com/posts/boil-water-notice-tips-and-tricks.html</id>
     <updated>2018-10-22T00:00:00+00:00</updated>
     <summary>lessons from growing up on the Gulf Coast</summary>
 </entry>
 
 <entry>
     <title>Stacking Calls to pytest's Parametrize</title>
-    <link href="https://blog.mplanchard.com/posts/stacking-calls-to-pytest-parametrize"/>
-    <id>https://blog.mplanchard.com/posts/stacking-calls-to-pytest-parametrize</id>
+    <link href="https://blog.mplanchard.com/posts/stacking-calls-to-pytest-parametrize.html"/>
+    <id>https://blog.mplanchard.com/posts/stacking-calls-to-pytest-parametrize.html</id>
     <updated>2018-02-17T00:00:00+00:00</updated>
     <summary>how to compose parametrizations for combinatoric testing</summary>
 </entry>
 
 <entry>
     <title>GCC on Fedora 12(!)</title>
-    <link href="https://blog.mplanchard.com/posts/gcc-on-fedora-12"/>
-    <id>https://blog.mplanchard.com/posts/gcc-on-fedora-12</id>
+    <link href="https://blog.mplanchard.com/posts/gcc-on-fedora-12.html"/>
+    <id>https://blog.mplanchard.com/posts/gcc-on-fedora-12.html</id>
     <updated>2015-11-02T00:00:00+00:00</updated>
     <summary>getting a compiler to run on a very old system</summary>
 </entry>
