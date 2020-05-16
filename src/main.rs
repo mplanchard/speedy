@@ -713,6 +713,7 @@ fn generate() {
 
 fn run() {
     let index = warp::fs::dir("static");
+    println!("Serving on http://127.0.0.1:5000/");
     warp::serve(index).run(([127, 0, 0, 1], 5000));
 }
 
