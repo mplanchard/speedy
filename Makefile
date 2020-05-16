@@ -1,4 +1,3 @@
-POST_INPUT := $(wildcard posts/*.md)
 POST_OUTPUT := $(wildcard static/posts/*.html)
 
 .PHONY: posts run
@@ -11,7 +10,7 @@ posts: $(POST_OUTPUT)
 
 # Rule to generate HTML.
 # Will only run if markdown files have been updated.
-$(POST_OUTPUT): $(POST_INPUT)
+$(POST_OUTPUT): posts/*.md
 	cargo run generate
 
 # Rule to run the server.
