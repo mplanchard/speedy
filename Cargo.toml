@@ -7,6 +7,6 @@ edition = "2018"
 [dependencies]
 chrono = "~0.4.6"
 clap = "~2.33.0"
-liquid = "~0.18.2"
+liquid = "~0.19.0"
 pulldown-cmark = "~0.5.2"
 warp = "~0.1.12"
