@@ -1,5 +1,6 @@
 POSTS = $(wildcard posts/*.md)
 SRC = $(shell \find src -type f -name *.rs)
+TEMPLATES = $(shell \find templates -type f)
 
 # If there is an error while executing a command to build a target,
 # delete the built target to ensure that nothing gets corrupted and that
@@ -15,7 +16,7 @@ all: run
 build: static
 
 # Ensure that we've generated our static site.
-static: $(SRC) $(POSTS)
+static: $(SRC) $(POSTS) $(TEMPLATES)
 	cargo run generate
 	touch static
 
@@ -31,4 +32,5 @@ watch:
 
 # Deploy static site to Azure.
 deploy: static
-	azcopy sync static/ 'https://mplanchardspeedyblog.blob.core.windows.net/$web' --recursive
+	azcopy sync './static' 'https://mplanchardspeedyblog.blob.core.windows.net/$$web' --recursive=true
+
