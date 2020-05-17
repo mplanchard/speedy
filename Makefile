@@ -1,5 +1,5 @@
-POST_INPUT = $(wildcard posts/*.md)
-POST_OUTPUT = $(wildcard static/**/*.html)
+POSTS = $(wildcard posts/*.md)
+SRC = $(shell \find src -type f -name *.rs)
 
 # If there is an error while executing a command to build a target,
 # delete the built target to ensure that nothing gets corrupted and that
@@ -10,24 +10,25 @@ POST_OUTPUT = $(wildcard static/**/*.html)
 
 all: run
 
+# Ensure we've built our Rust crate & generated our static site.
 # Will only run if generated HTML is out of date
-posts: $(POST_OUTPUT)
+build: static
 
-# Rule to generate HTML.
-# Will only run if markdown files have been updated.
-$(POST_OUTPUT): $(POST_INPUT)
+# Ensure that we've generated our static site.
+static: $(SRC) $(POSTS)
 	cargo run generate
+	touch static
 
 # Rule to run the server.
 # Will regenerate HTML if needed.
-run: $(POST_OUTPUT)
+run: static
 	cargo run run
 
 # Watch for changes and run the server.
 # Upon changes, regenerate posts if necessary and then rerun the server.
-watch: $(POST_OUTPUT)
+watch: static
 	cargo watch --shell "$(MAKE) run"
 
 # Deploy static site to Azure.
-deploy: $(POST_OUTPUT)
+deploy: static
 	azcopy sync static/ 'https://mplanchardspeedyblog.blob.core.windows.net/$web' --recursive
