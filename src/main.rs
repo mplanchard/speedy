@@ -6,13 +6,11 @@ use std::iter::FromIterator;
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use clap::{App, ArgMatches, SubCommand};
 use liquid;
-use pulldown_cmark::{html, Options as MDOptions, Parser as MDParser};
+use pulldown_cmark::{html, Event, Options as MDOptions, Parser as MDParser, Tag, CowStr};
 use warp;
-
 
 const IDX_NUM_RECENT_POSTS: u8 = 10;
 const URL_BASE: &'static str = "https://blog.mplanchard.com";
-
 
 #[derive(Debug)]
 struct Metadata {
@@ -103,9 +101,7 @@ impl Post {
             .render(&globals)
             .expect(&format!("couldn't render post summary: {:?}", metadata))
     }
-
 }
-
 
 struct TemplateBlockStrings {
     about: &'static str,
@@ -168,7 +164,6 @@ const TEMPLATE_STRINGS: TemplateStrings = TemplateStrings {
     },
 };
 
-
 struct PageTemplates {
     about: liquid::Template,
     atom: liquid::Template,
@@ -188,7 +183,6 @@ impl PageTemplates {
         }
     }
 }
-
 
 struct SnippetTemplates {
     atom_entry: liquid::Template,
@@ -301,7 +295,6 @@ impl ContextData {
         options.insert(MDOptions::ENABLE_STRIKETHROUGH);
         options
     }
-
 }
 
 /// Maintain structs and data to be shared among rendering functions
@@ -674,7 +667,6 @@ impl<'a> Context<'a> {
     }
 }
 
-
 fn files_from_dir<S: AsRef<str>>(path: S) -> impl Iterator<Item = fs::DirEntry> {
     fs::read_dir(path.as_ref())
         .expect(&format!("Couldn't read dir: {}", path.as_ref()))
@@ -688,10 +680,35 @@ fn files_from_dir<S: AsRef<str>>(path: S) -> impl Iterator<Item = fs::DirEntry> 
         .filter(|de| &de.file_name().to_string_lossy()[0..1] != ".")
 }
 
-
 fn md_to_html(md: &str, opts: MDOptions) -> String {
     let mut html = String::new();
-    html::push_html(&mut html, MDParser::new_ext(&md, opts));
+    let mut heading_level: u32 = 0;
+    let parser = MDParser::new_ext(&md, opts).filter_map(|event| match event {
+        Event::Start(Tag::Heading(level @ 1..=6)) => {
+            heading_level = level;
+            None
+        }
+        Event::Text(text) => {
+            if heading_level != 0 {
+                let anchor = text
+                    .clone()
+                    .into_string()
+                    .trim()
+                    .to_lowercase()
+                    .replace(" ", "-");
+                let tmp = Event::Html(CowStr::from(format!(
+                    "<h{} id=\"{}\">{} <div class=\"anchor-link\" aria-hidden=\"true\"><a href=\"#{}\">⤶</a></div>",
+                    heading_level, anchor, text, anchor
+                )))
+                .into();
+                heading_level = 0;
+                return tmp;
+            }
+            Some(Event::Text(text))
+        }
+        _ => Some(event),
+    });
+    html::push_html(&mut html, parser);
     html
 }
 
