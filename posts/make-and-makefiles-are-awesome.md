@@ -164,14 +164,19 @@ If neither the target nor any prerequisite targets need to be run, `make target`
 will say `Nothing to be done for 'target'` and quickly exit.
 **This is the core value proposition of Makefiles.**
 
-For example, when working on this blog, my `make posts` target compiles my
-markdown posts into HTML. Because Make knows when this does and doesn't need to
-be run, I can include the generated blog posts as a prerequisite for `make run`,
-which means that whenever I run the blog locally, it will automatically build HTML posts,
-but _only if needed!_ Otherwise it starts up the server straightaway. I only
-need to remember one command, and Make takes care of the rest, while saving
-me time when certain commands don't need to be run. You can see that Makefile
-[here](https://github.com/mplanchard/speedy/blob/master/Makefile).
+For example, when working on this blog, a `make static` rule compiles my
+markdown posts into HTML if either my static site generator code
+has or the markdown posts themselves have changed. Another rule, `make run`,
+runs the server. It depends on `static`, and so it will automatically build
+the site if needed. Yet another rule, `make watch`, watches the filesystem for
+changes and runs `make run` if it encounters any. Since `make watch` calls
+`make run`, which depends on `static`, it automatically "knows" when it only
+needs to restart the server versus when it needs to also rebuild the site. At
+every point in this dependency chain, I can rely on the `static` rule to
+either run or not run as needed, meaning other, higher-level rules automatically
+become intelligent, only compiling code when necessary.
+
+You can see the Makefile for this blog [here](https://github.com/mplanchard/speedy/blob/master/Makefile).
 
 Also don't forget, when writing rules, you can run with `make [target] --debug`
 to see why Make chose whether or not to run a particular rule!
