@@ -6,7 +6,7 @@ SRC = $(shell \find src -type f -name *.rs)
 # the target will be rebuilt the next time make is run.
 .DELETE_ON_ERROR:
 
-.PHONY: posts run
+.PHONY: deploy posts run watch
 
 all: run
 
@@ -26,7 +26,7 @@ run: static
 
 # Watch for changes and run the server.
 # Upon changes, regenerate posts if necessary and then rerun the server.
-watch: static
+watch:
 	cargo watch --shell "$(MAKE) run"
 
 # Deploy static site to Azure.
