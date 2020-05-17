@@ -53,6 +53,16 @@ main {
     border-bottom: 1px solid black;
 }
 
+.anchor-link {
+    display: inline-block;
+}
+.anchor-link a {
+    opacity: 0.0;
+}
+.anchor-link a:hover {
+    opacity: 1.0;
+}
+
 .post-metadata {
     text-align: right;
 }

@@ -4,13 +4,21 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2019-07-30T00:00:00+00:00</updated>
+    <updated>2020-05-16T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>Make and Makefiles are Awesome</title>
+    <link href="https://blog.mplanchard.com/posts/make-and-makefiles-are-awesome.html"/>
+    <id>https://blog.mplanchard.com/posts/make-and-makefiles-are-awesome.html</id>
+    <updated>2020-05-16T00:00:00+00:00</updated>
+    <summary>Make and its associated Makefiles have been around forever, and have gotten a bit of a bad rap due to people encountering and writing arcane, poorly documented examples. However, learning to use Make effectively can provide a significant benefit to modern software projects, enabling intelligent ordering and dependency management for common tasks that would be a nightmare to implement from scratch. In this article we'll cover the basics of Makefiles and how they can be useful in the context of a modern scripting language like JavaScript or Python.</summary>
+</entry>
+
 <entry>
     <title>Creating an RSS (Atom) Feed</title>
     <link href="https://blog.mplanchard.com/posts/creating-an-rss-feed.html"/>

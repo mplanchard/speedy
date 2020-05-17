@@ -47,7 +47,7 @@
 </nav>
     </header>
     <main>
-        <h1>Adding Tags to my Static Site: Part 4</h1>
+        <h1 id="adding-tags-to-my-static-site:-part-4">Adding Tags to my Static Site: Part 4 <div class="anchor-link" aria-hidden="true"><a href="#adding-tags-to-my-static-site:-part-4">⤶</a></div></h1>
 <ul>
 <li>Part 1 <a href="/posts/adding-support-for-tags-1.html">here</a></li>
 <li>Part 2 <a href="/posts/adding-support-for-tags-2.html">here</a></li>
@@ -64,7 +64,7 @@ can use for all of our template rendering.</p>
 accomplish our goals in regards to tags, it will definitely make this
 part of things easier.</p>
 <p>So, on we go.</p>
-<h2>HTML</h2>
+<h2 id="html">HTML <div class="anchor-link" aria-hidden="true"><a href="#html">⤶</a></div></h2>
 <p>Just as a reminder, in part two we created the following snippet, with
 the intention of using it to render a tag name with its associated
 posts:</p>
@@ -106,7 +106,7 @@ directly into our <code>generic.html</code> generic template:</p>
 </code></pre>
 <p>Since we have methods for easily rendering a generic page by just passing
 its title and its content, it should be easy.</p>
-<h2>Rust Prep</h2>
+<h2 id="rust-prep">Rust Prep <div class="anchor-link" aria-hidden="true"><a href="#rust-prep">⤶</a></div></h2>
 <p>After the refactoring in part three, we have a collection of all of our
 <code>Post</code> instances available on the <code>Context</code> instance to use at any time.
 We also have all of our posts pre-rendered using the post template shown
@@ -235,7 +235,7 @@ use the new location.</p>
     ...
 
 </code></pre>
-<h3>An Aside on Self-Referential Structs</h3>
+<h3 id="an-aside-on-self-referential-structs">An Aside on Self-Referential Structs <div class="anchor-link" aria-hidden="true"><a href="#an-aside-on-self-referential-structs">⤶</a></div></h3>
 <p>The next thing I wanted to do was call our <code>tags_map()</code> function from
 <a href="/posts/adding-support-for-tags-2.html">part two</a> as part of the setup of our <code>Context</code> object, that way our map
 could be used any time we need it without reconstructing it. I tried
@@ -377,7 +377,7 @@ instance and pass it into the <code>Context</code> struct:</p>
     context.generate_all();
 }
 </code></pre>
-<h2>Adding the Tags Page</h2>
+<h2 id="adding-the-tags-page">Adding the Tags Page <div class="anchor-link" aria-hidden="true"><a href="#adding-the-tags-page">⤶</a></div></h2>
 <p>Since we have our tag map available on our <code>Context</code> object now, we can
 go ahead and write a few functions to render the content of our tag page:</p>
 <pre><code class="language-rust">fn render_tag_for_tags_page&lt;S: AsRef&lt;str&gt;&gt;(&amp;self, tag: &amp;S) -&gt; String {
@@ -419,7 +419,7 @@ fn render_tags_page(&amp;self) -&gt; String {
 }
 </code></pre>
 <p>Done!</p>
-<h2>Linking from Posts</h2>
+<h2 id="linking-from-posts">Linking from Posts <div class="anchor-link" aria-hidden="true"><a href="#linking-from-posts">⤶</a></div></h2>
 <p>From here, we can also update the renderer for a given post page to not
 just show the tags for the post, but link to our anchors on our tags page!</p>
 <p>The template for a Post page looks like this:</p>
@@ -518,7 +518,7 @@ this:</p>
 &lt;/nav&gt;
 </code></pre>
 <p>Generated, checked, and functional!</p>
-<h2>Conclusion</h2>
+<h2 id="conclusion">Conclusion <div class="anchor-link" aria-hidden="true"><a href="#conclusion">⤶</a></div></h2>
 <p>Well, that is the end of the #tags saga, for now. This was a rather meandering
 path through lots of interesting refactors, into the depths of the Rust
 borrow checker, and finally to actually rendering some tag links. The next
@@ -556,13 +556,13 @@ RSS feed (yayyy, XML)!</p>
     </nav>
     <details class="footer-license">
         <summary>
-            &copy; Matthew Planchard, 2019-07-30
+            &copy; Matthew Planchard, 2020-05-16
             <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
                 (CC BY-SA 4.0)
             </a>
         </summary>
         <p>
-            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            &copy; 2020-05-16 by Matthew Planchard &mdash; unless otherwise noted,
             all content is made available under the
             <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                 Creative Commons Attribution-ShareAlike 4.0 International License

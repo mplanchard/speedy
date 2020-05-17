@@ -47,12 +47,12 @@
 </nav>
     </header>
     <main>
-        <h1>Stacking Calls to pytest’s Parametrize</h1>
+        <h1 id="stacking-calls-to-pytest’s-parametrize">Stacking Calls to pytest’s Parametrize <div class="anchor-link" aria-hidden="true"><a href="#stacking-calls-to-pytest’s-parametrize">⤶</a></div></h1>
 <p><strong>NB:</strong> this article was imported from <a href="https://medium.com/@mplanchard/stacking-calls-to-pytests-parametrize-d3cd4acc5611">medium</a></p>
 <p>Hopefully you’re already familiar with pytest’s fantastic <code>parametrize()</code> decorator. If not, there’s a brief summary below. If you are, skip the summary and head straight to the interesting part!</p>
 <p>Oh yeah, and remember it’s spelled parametrize (British), not parameterize (American). There has been <a href="https://github.com/pytest-dev/pytest/pull/3159">some discussion</a> about adding an alias, but until they do, you’ll have to remember the alternative spelling if you’re American!</p>
 <hr />
-<h2>Parametrize Basics</h2>
+<h2 id="parametrize-basics">Parametrize Basics <div class="anchor-link" aria-hidden="true"><a href="#parametrize-basics">⤶</a></div></h2>
 <p>It allows you to define a series of values to be passed into your test function as parameters. Each member of the series corresponds to a new, isolated call to your test function (and each counts as its own test). Here’s a simple example:</p>
 <pre><code class="language-python">import pytest
 
@@ -69,7 +69,7 @@ tests/decorators/test_generic.py::test_foo[b] b
 PASSED
 </code></pre>
 <p>Notice that a test was generated for each parameter, that the parameters were passed in for the <code>foo</code> variable, and that pytest was nice enough to tell you, in the verbose output, which parameters were being passed to which call.</p>
-<h2>The Problem</h2>
+<h2 id="the-problem">The Problem <div class="anchor-link" aria-hidden="true"><a href="#the-problem">⤶</a></div></h2>
 <p>There are plenty of times when you want to pass multiple parametrized arguments to a test function, and sometimes, you want to ensure that each parameter for one argument gets run against each parameter for another. One way to do this is manually:</p>
 <pre><code class="language-python">import pytest
 
@@ -107,7 +107,7 @@ def test_multi(foo, bar):
 </code></pre>
 <p>And indeed, this results in the same console output when run with <code>pytest -sv</code> as our previous solution. However, it harms readability. Not everyone is going to know immediately what <code>product()</code> does, after all.</p>
 <p>Luckily, there’s an even easier solution.</p>
-<h2>Parametrize Stacking</h2>
+<h2 id="parametrize-stacking">Parametrize Stacking <div class="anchor-link" aria-hidden="true"><a href="#parametrize-stacking">⤶</a></div></h2>
 <p>Like any well behaved decorator, <code>parametrize()</code> can be stacked with other decorators. Conveniently, it can be stacked with other calls to <code>parametrize()</code>, too! When multiple parametrize decorators are present, the function will be run with each value of each parametrization with each value of every other parametrization. So, we can implement our multiple-parameter test this way:</p>
 <pre><code class="language-python">import pytest
 
@@ -162,13 +162,13 @@ PASSED
     </nav>
     <details class="footer-license">
         <summary>
-            &copy; Matthew Planchard, 2019-07-30
+            &copy; Matthew Planchard, 2020-05-16
             <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
                 (CC BY-SA 4.0)
             </a>
         </summary>
         <p>
-            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            &copy; 2020-05-16 by Matthew Planchard &mdash; unless otherwise noted,
             all content is made available under the
             <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                 Creative Commons Attribution-ShareAlike 4.0 International License

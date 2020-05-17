@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - Make and Makefiles are Awesome</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1 id="make-and-makefiles-are-awesome">Make and Makefiles are Awesome <div class="anchor-link" aria-hidden="true"><a href="#make-and-makefiles-are-awesome">⤶</a></div></h1>
+<h2 id="contents">Contents <div class="anchor-link" aria-hidden="true"><a href="#contents">⤶</a></div></h2>
+<ul>
+<li><a href="#make-and-makefiles-are-awesome">Make and Makefiles are Awesome</a>
+<ul>
+<li><a href="#contents">Contents</a></li>
+<li><a href="#make-history">Make History</a></li>
+<li><a href="#make-setup">Make Setup</a></li>
+<li><a href="#makefile-anatomy">Makefile Anatomy</a>
+<ul>
+<li><a href="#makefile-rules">Makefile Rules</a></li>
+<li><a href="#makefile-special-targets">Makefile Special Targets</a></li>
+<li><a href="#makefile-functions">Makefile Functions</a></li>
+<li><a href="#makefile-variables">Makefile Variables</a></li>
+<li><a href="#makefile-rules-patterns">Makefile Rules Patterns</a>
+<ul>
+<li><a href="#directory-targets">Directory Targets</a></li>
+<li><a href="#aliases">Aliases</a></li>
+<li><a href="#empty-targets">Empty Targets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#make-python">Make Python</a>
+<ul>
+<li><a href="#virtual-environment-management">Virtual Environment Management</a></li>
+<li><a href="#different-environments-different-requirements">Different Environments, Different Requirements</a></li>
+<li><a href="#inside-and-outside-of-docker">Inside and Outside of Docker</a></li>
+</ul>
+</li>
+<li><a href="#make-javascript">Make JavaScript</a>
+<ul>
+<li><a href="#node-modules">Node Modules</a></li>
+</ul>
+</li>
+<li><a href="#typescript-compiled-files">TypeScript Compiled Files</a></li>
+<li><a href="#make-limitations">Make Limitations</a>
+<ul>
+<li><a href="#passing-arguments-to-commands">Passing Arguments to Commands</a></li>
+<li><a href="#becoming-arcane">Becoming Arcane</a></li>
+</ul>
+</li>
+<li><a href="#other-benefits-of-make">Other Benefits of Make</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="make-history">Make History <div class="anchor-link" aria-hidden="true"><a href="#make-history">⤶</a></div></h2>
+<p>Make has been around a <em>long</em> time. According to <a href="https://en.wikipedia.org/wiki/Make_(software)">wikipedia</a>, Make
+first appeared in the very first UNIX in 1976 and was written by <a href="https://en.wikipedia.org/wiki/Stuart_Feldman">Stuart Feldman</a> at
+Bell Labs. Here's a quote from him on its original inspiration, pulled from the
+Wikipedia article above, which sources it as being from <em><a href="https://www.hpb.com/products/the-art-of-unix-programming-9780131429017">The Art of Unix Programming</a></em>
+by Eric S. Raymond.</p>
+<blockquote>
+<p>Make originated with a visit from Steve Johnson (author of yacc, etc.), storming into my office, cursing the Fates that had caused him to waste a morning debugging a correct program (bug had been fixed, file hadn't been compiled, cc *.o was therefore unaffected). As I had spent a part of the previous evening coping with the same disaster on a project I was working on, the idea of a tool to solve it came up. It began with an elaborate idea of a dependency analyzer, boiled down to something much simpler, and turned into Make that weekend. Use of tools that were still wet was part of the culture. Makefiles were text files, not magically encoded binaries, because that was the Unix ethos: printable, debuggable, understandable stuff.</p>
+</blockquote>
+<p>This core principle of Make, which is to say making it easier to build software
+artifacts (compiled files, releases, etc.) from source code files, remains
+unchanged 44 years later.</p>
+<p>The Make that you find most often on modern systems is GNU Make, an extension of
+the original, created in <a href="https://stackoverflow.com/questions/34413436/what-was-the-first-release-date-of-gnu-make">late 1987 or early 1988</a>.
+It added some quality of life improvements to the original, including
+conditionals, builtin functions, and the ability to set and update variables.
+GNU Make is now by far the most commonly used variant of Make, with most
+large and small C projects using it. If you've ever run
+<code>./configure &amp;&amp; make &amp;&amp; make install</code> to install some Linux application you
+downloaded, you were probably using GNU Make (often via <a href="https://www.gnu.org/software/automake/">Automake</a> and
+<a href="https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html">Autotools</a>). It is used to build the Linux Kernel itself, Firefox, Chromium,
+and many other large projects.</p>
+<p>As is the case with any general purpose tool that wraps a complex task, Make
+hides a lot of complexity under the covers, and there are a number of ways to
+tweak bits and pieces of that complexity. In addition, it carries a great deal of
+backwards-compatible syntactical baggage as a result of being a piece of
+software that is <em>44 years old</em>. As a result, it is possible to write (and
+many of us have encountered) Makefiles that are virtually unintelligible
+in their obscurity. This has led to a bit of a movement in modern software
+development <em>away</em> from Makefiles, except in the C/C++ world where it is
+still going strong, and one will not infrequently see StackOverflow answers,
+blogs, and comments about how you should NOT use Make for your modern
+project, but instead use one of the many, many projects that have sprung up
+to try to replace it, such as <a href="https://cmake.org/cmake/help/v3.17/guide/tutorial/index.html">CMake</a> (which you honestly might want to consider
+for complex cross-platform builds of compiled code), <a href="https://www.fabfile.org/">Fabric</a>, <a href="https://gruntjs.com/">Grunt</a>,
+<a href="https://docs.npmjs.com/">npm</a>, and others.</p>
+<p>Unfortunately, most replacements for Make provide only a task runner,
+lacking the sophisticated ability to skip unnecessary build steps that makes
+Make so useful. Those that do give you a way to intelligently skip steps
+often add a complexity burden approaching that of Make itself. &quot;But,&quot; you
+might say, &quot;I'm writing Python! I don't run compiled files directly! I don't
+need anything other than a task runner.&quot; While it might be true that Python's
+<code>.pyc</code> files are not called directly, I hope I will show in this article that
+there are still plenty of artifacts created during the life cycle of a Python
+project, and how Make can make working with them much easier (while also
+providing a task runner as needed).</p>
+<h2 id="make-setup">Make Setup <div class="anchor-link" aria-hidden="true"><a href="#make-setup">⤶</a></div></h2>
+<p>If you'd like to follow along, you'll need <code>make</code>. Make adds features with
+some regularity, but the basic set of features we'll discuss in this article
+should be readily available on most systems. They all work with the version of
+<code>make</code> that comes on a modern Mac, 3.81, which is from 2006!</p>
+<pre><code class="language-raw">&gt; make --version
+GNU Make 3.81
+Copyright (C) 2006  Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+This program built for i386-apple-darwin11.3.0
+</code></pre>
+<p>Versions of <code>make</code> are generally backwards compatible, so you can also use
+newer versions. On a Mac, <code>brew install make</code> gets me <code>gmake</code> (GNU Make) 4.3.
+This is the same version currently in the Arch Linux Core repo, while stable
+Debian is on 4.2.</p>
+<p>If you're on Windows, <code>make</code> should already be available in the WSL.</p>
+<p>One <strong>massive tip</strong> before we get started. When you're writing your own
+Makefiles, you can run them with <code>make --debug</code>, which will show you
+<em>why</em> Make decided or did not decide to run a given rule. This is extremely
+helpful when trying to work out prerequisites.</p>
+<h2 id="makefile-anatomy">Makefile Anatomy <div class="anchor-link" aria-hidden="true"><a href="#makefile-anatomy">⤶</a></div></h2>
+<p>A Makefile is the one requirement for actually using Make. Generally
+you'll want a Makefile in the root of your project, so that you can run
+<code>make</code> commands from there.</p>
+<p>According to the <a href="https://www.gnu.org/software/make/manual/html_node/Makefile-Contents.html#Makefile-Contents">docs</a>,
+Makefiles may contain &quot;explicit rules, implicit rules, variable definitions,
+directives, and comments&quot;. We won't discuss implicit rules here, but we'll
+touch on all the rest.</p>
+<h3 id="makefile-rules">Makefile Rules <div class="anchor-link" aria-hidden="true"><a href="#makefile-rules">⤶</a></div></h3>
+<p><strong>A Note on Copying and Pasting:</strong> Makefiles use tabs rather than spaces. If
+you copy and paste an example from this site into your editor it <em>may</em> or
+it <em>may not</em> automatically convert the spaces to tabs for you. Most editors
+are smart enough to know to use tabs in Makefiles, but you should check to be
+sure.</p>
+<p>A rule looks like this:</p>
+<pre><code class="language-Makefile"># Comments are preceded with hashes
+target: prerequisite...
+    command...
+</code></pre>
+<p>A rule says, &quot;This target depends on these prerequisites. To create
+the target, run this command.&quot; The collection of commands for a rule is
+called its recipe.</p>
+<p>Prerequisites are optional, and the command can span multiple lines.
+Prerequisites can be file paths (relative to the makefile) or other targets
+defined in the Makefile.</p>
+<p>To run the rule, you run <code>make target</code>. Make will run the commands if:</p>
+<ul>
+<li>The target does not exist</li>
+<li>Any of the prerequisite(s) are newer than the target (determined by last
+modification time of the files)</li>
+</ul>
+<p>If any of the prerequisites are other targets in the Makefile, <code>make</code> will
+perform the same checks to determine if those need to run before running
+the checks for the current rule.</p>
+<p>If neither the target nor any prerequisite targets need to be run, <code>make target</code>
+will say <code>Nothing to be done for 'target'</code> and quickly exit.
+<strong>This is the core value proposition of Makefiles.</strong></p>
+<p>For example, when working on this blog, my <code>make posts</code> target compiles my
+markdown posts into HTML. Because Make knows when this does and doesn't need to
+be run, I can include the generated blog posts as a prerequisite for <code>make run</code>,
+which means that whenever I run the blog locally, it will automatically build HTML posts,
+but <em>only if needed!</em> Otherwise it starts up the server straightaway. I only
+need to remember one command, and Make takes care of the rest, while saving
+me time when certain commands don't need to be run. You can see that Makefile
+<a href="https://github.com/mplanchard/speedy/blob/master/Makefile">here</a>.</p>
+<p>Also don't forget, when writing rules, you can run with <code>make [target] --debug</code>
+to see why Make chose whether or not to run a particular rule!</p>
+<h3 id="makefile-special-targets">Makefile Special Targets <div class="anchor-link" aria-hidden="true"><a href="#makefile-special-targets">⤶</a></div></h3>
+<p>Makefiles have a number of <a href="https://www.gnu.org/software/make/manual/html_node/Special-Targets.html#Special-Targets">special targets</a>, but there are two that you should
+definitely know.</p>
+<p>The first is key to using <code>Make</code> as a task runner, and might look like:</p>
+<pre><code class="language-Makefile">.PHONY: test
+
+test:
+  cargo test
+</code></pre>
+<p><code>.PHONY</code> tells Make that we don't actually expect a <code>test</code> file to be created
+when we run <code>make test</code>. This is important, because otherwise if you create
+a <code>test</code> directory or a file called <code>test</code>, make will think that the <code>test</code>
+target is up-to-date and won't run anything.</p>
+<p>The second is actually an implicit special target and is just the first
+non-special target in the Makefile. Whatever that first target is will
+be called whenever <code>make</code> is called with no arguments. Conventionally,
+a target called <code>all</code> is used for this:</p>
+<pre><code class="language-Makefile">all: test build distribute
+
+test:
+  cargo test
+
+build:
+  cargo build --release
+
+distribute:
+  cargo publish
+</code></pre>
+<p>With the above Makefile, running <code>make</code> would run the test rule, then
+the build rule, then the distribute rule.</p>
+<h3 id="makefile-functions">Makefile Functions <div class="anchor-link" aria-hidden="true"><a href="#makefile-functions">⤶</a></div></h3>
+<p>Make comes with a bunch of <a href="https://www.gnu.org/software/make/manual/html_node/Functions.html#Functions">builtin functions</a>. The function
+call syntax looks like <code>$(fn_name arg1,arg2,arg3)</code> (note the lack of spaces
+between argument names).</p>
+<p>You can use function results as targets or prerequisites, you can use them
+to populate commands, and you can assign them to variables.</p>
+<p>Two of the most convenient functions are <code>wildcard</code>, which allows you to
+get a glob pattern list of matching files to assign to a variable, and
+<code>shell</code>, which allows you to get the result of any arbitrary shell command.</p>
+<h3 id="makefile-variables">Makefile Variables <div class="anchor-link" aria-hidden="true"><a href="#makefile-variables">⤶</a></div></h3>
+<p>Variables can be assigned at the root of the Makefile or for an individual
+rule. Variable assignment for a rule overrides any variable with the same
+name defined in the Makefile root.</p>
+<pre><code class="language-Makefile">MY_VAR = initial
+
+one:
+  echo $(MY_VAR)  # echoes &quot;initial&quot;
+
+# Define variables for a rule by creating a target-to-variable assignment map
+two: MY_VAR = overridden  # they can override existing variables
+two: MY_OTHER_VAR = other  # or define new ones
+two: prereq
+  echo $(MY_VAR)  # echoes &quot;overridden
+  echo $(MY_OTHER_VAR)  # echos &quot;other&quot;
+
+three:  # variables overridden in rules are not overridden globally
+  echo $(MY_VAR)  # echoes &quot;initial&quot;
+</code></pre>
+<p>There are <a href="https://www.gnu.org/software/make/manual/html_node/Flavors.html#Flavors">two basic variable assignment operators</a> in Makefiles,
+<code>=</code> and <code>:=</code>, with the difference being the way nested variable expansions
+in the variable values are handled. Nested variables in variables defined
+with <code>:=</code> are expanded <em>when they are defined</em>, while nested variables
+in variables defined with <code>=</code> are expanded <em>when they are used</em>.</p>
+<p>In most cases either will work and you don't have to worry about it, but
+<code>:=</code> is probably less likely to cause odd behavior in edge cases, so I would
+recommend using it unless you need the behavior of <code>=</code>.</p>
+<p>To illustrate:</p>
+<pre><code class="language-Makefile"># BASE isn't defined, but since we use `=` it won't be expanded until it is
+# used, at which point BASE will be defined.
+F_NAME_1 = $(BASE).js
+# BASE isn't defined, and since we use `:=` we try to expand it immediately,
+# and BASE gets inserted as an empty string.
+F_NAME_2 := $(BASE).js
+BASE = myfile
+
+my_rule:
+  echo $(F_NAME_1)  # echoes &quot;myfile.js&quot;
+  echo $(F_NAME_2)  # echoes &quot;.js&quot;
+</code></pre>
+<p>There are also a number of <a href="https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html#Automatic-Variables">automatic variables</a> that are defined by Make
+itself and which can be used throughout your Makefile. One important
+automatic variable is <code>MAKE</code>, which is the Make executable used to run
+the current Makefile. You can use this to recursively invoke Make if needed.
+For example, you might want to use <a href="https://github.com/watchexec/watchexec">watchexec</a> to enable automatic test rerunning
+even if your framework doesn't support it:</p>
+<pre><code class="language-Makefile">test:
+  pytest
+
+watch:
+  watchexec --exts py $(MAKE) test
+</code></pre>
+<h3 id="makefile-rules-patterns">Makefile Rules Patterns <div class="anchor-link" aria-hidden="true"><a href="#makefile-rules-patterns">⤶</a></div></h3>
+<p>Now that we've covered the basics of functions and variables, we can consider
+some more advanced rules.</p>
+<h4 id="directory-targets">Directory Targets <div class="anchor-link" aria-hidden="true"><a href="#directory-targets">⤶</a></div></h4>
+<p>First, let's talk about directories as targets. You might want this if you
+have a rule that takes some files in one directory and outputs files in another.
+The first way to do this is to base the rule on the files in the directory,
+and this often works just fine:</p>
+<pre><code class="language-Makefile"># Find input files in the foo-in directory.
+INPUT_FILES = $(shell find foo-in -type f *.in)
+# Ensure foo-out exists and find all output files in the dir
+OUTPUT_FILES = $(shell mkdir -p foo-out &amp;&amp; find foo-out -type f *.out)
+
+$(OUTPUT_FILES): $(INPUT_FILES)
+  # Note you need to use $$ to pass a $ to the shell, since it's a reserved
+  # character in makefiles.
+  for i in $(INPUT_FILES); do touch &quot;foo-out/$$i.out&quot;; done
+</code></pre>
+<p>This is usually sufficient. However, sometimes your output directory is <em>massive</em>,
+so you don't want to spend the time finding files in it, or there's not really
+a direct mapping between your input and output, so you only really care about running
+some command when the prereqs change. To enable this, you can make a rule
+whose target is the directory. Because adding or updating files in
+a directory doesn't update <em>the directory itself</em>, I'll often use the following
+pattern to ensure that Make can tell that the rule has been run:</p>
+<pre><code class="language-Makefile">build_dir: prereq_one prereq_two
+  mkdir -p build_dir  # whatever command would create/update the directory
+  touch build_dir  # mark _the directory itself_ as being updated
+</code></pre>
+<p>Touching the directory updates its file metadata so that its most recent
+modification date will be when the rule was run.</p>
+<h4 id="aliases">Aliases <div class="anchor-link" aria-hidden="true"><a href="#aliases">⤶</a></div></h4>
+<p>In some of the rules we've seen, we've got variable target names, or target
+names that we might be able to easily remember a Make command for. To help
+with that, we can make rules that have other rules' targets as their
+prerequisites, creating what are essentially aliases.</p>
+<p>As an example, let's consider a node project where I want to run <code>npm install</code>
+any time <code>package.json</code> or <code>package-lock.json</code> change:</p>
+<pre><code class="language-Makefile:">.PHONY: install
+
+install: node_modules  # this rule has no recipe, just a prereq.
+
+# This rule defines how to satisfy the prereq for install
+node_modules: package.json package-lock.json
+  npm install
+  touch node_modules  # ensure our target knows it's updated
+</code></pre>
+<p>Note that when defining <em>other</em> targets, you SHOULD NOT use the alias
+name as a prerequisite, because it will never actually exist and so will always trigger
+a rebuild of the associated target. Instead, use the alias' dependency.
+In other words, <strong>aliases are for the Make command only, not for prerequisites!</strong>
+Nothing that needs to be in <code>.PHONY</code> should ever be a prerequisite, unless it's
+a prerequisite for something that should always run.</p>
+<h4 id="empty-targets">Empty Targets <div class="anchor-link" aria-hidden="true"><a href="#empty-targets">⤶</a></div></h4>
+<p>This pattern is mentioned in the <a href="https://www.gnu.org/software/make/manual/html_node/Empty-Targets.html#Empty-Targets">Make docs</a>. Essentially,
+you use an empty file as the target, touching it when the Make command is
+run. This allows Make to track when the rule was last run, so it will only run
+it again if prerequisites change.</p>
+<p>Rather than using an empty target directly, I will often use an empty target
+in a <code>.make</code> directory, combined with an alias, to avoid cluttering my project
+directory with empty <code>test</code> files and such.</p>
+<p>For example, expanding a bit on the example from the Make docs:</p>
+<pre><code class="language-Makefile"># The special .SILENT target tells Make not to print each step in the
+# recipe before it runs it. This way, we only get our changed files as
+# output.
+.SILENT: .make/print
+# While .make/print makes a target, print itself does not, so it's phony.
+.PHONY: print
+
+# Ensure the .make directory exists
+.make:
+  mkdir -p .make
+
+# Print out only any dependencies that have changed since the last time
+# the rule was run. If no dependencies have changed, do nothing
+print: .make/print
+
+# `print` is just an &quot;alias&quot; to this target.
+.make/print: .make deps/*
+  # $? is an automatic variable representing only changed prerequisites.
+  echo $?
+  touch .make/print
+</code></pre>
+<h2 id="make-python">Make Python <div class="anchor-link" aria-hidden="true"><a href="#make-python">⤶</a></div></h2>
+<p>Okay, so we've talked a lot about Make in general, but let's talk about
+how it can help us in some modern contexts. First up, a Python project.</p>
+<p>One of the biggest pains in Python-land is managing your Python interpreter
+and virtual environments. Here's a solution that ensures your venv exists
+and makes it accessible to use in other commands:</p>
+<h3 id="virtual-environment-management">Virtual Environment Management <div class="anchor-link" aria-hidden="true"><a href="#virtual-environment-management">⤶</a></div></h3>
+<pre><code class="language-Makefile">PYTHON := python3.8
+# Save the venv activation command as a var for easy use
+VENV = source venv/bin/activate;
+
+.PHONY: install lint test
+
+# Running `make` with no arguments will create the venv, install dependencies,
+# run linting, and run tests.
+all: lint test
+
+# Ensure we have a .make directory for tracking empty targets (see
+# Empty Targets above)
+.make:
+  mkdir -p .make
+
+# Make a venv in a local `./venv` directory if it does not exist.
+venv:
+  $(PYTHON) -m venv venv
+  touch venv
+
+# Install requirements to the venv. If the venv doesn't exist, it will
+# be created. Install will run if setup.py or requirements files change
+install: .make/install
+# Install is an alias to this rule
+.make/install: .make  venv setup.py requirements.txt requirements.dev.txt
+  $(VENV) pip install -r requirements.txt -r requirements.dev.txt
+  $(VENV) python setup.py install -e .
+
+# Other `python` commands now just need to depend on install. For example,
+# this target will run tests, but first it will create the venv if needed,
+# and install packages if setup.py or requirements.txt or requirements.dev.txt
+# have changed.
+test: .make/install
+  $(VENV) pytest
+
+# Similarly, `make lint` will also create a venv, install or update packages,
+# and then run linting, but it will skip the first steps if it can
+lint: .make/install
+  $(VENV) mypy .
+  $(VENV) pylint
+  $(VENV) flake8
+</code></pre>
+<p>With the above configuration, someone working on your project for the first
+time can check it out and <em>immediately</em> run <code>make test</code> to verify everything
+is working. Make will handle ensuring that all of the prerequisites are
+satisfied. In addition, any time you run <code>make test</code>, any dependencies
+you've added will be automatically installed before tests are run.</p>
+<h3 id="different-environments,-different-requirements">Different Environments, Different Requirements <div class="anchor-link" aria-hidden="true"><a href="#different-environments,-different-requirements">⤶</a></div></h3>
+<p>Let's say you want a different set of dependencies to be installed in CI. Maybe
+you don't want to install dev dependencies since they take a bunch of time
+and are only needed to do refactoring in VSCode or whatever, so you just
+want to install test dependencies to keep CI fast. Assuming you have some
+way of detecting that you're running in CI (an environment variable?), we
+can do that:</p>
+<pre><code class="language-Makefile"># Env vars are passed into the Makefile, so we can check to see if our CI
+# var is defined and then use the appropriate requirements file:
+DEV_REQUIREMENTS = $(if $(CI),requirements.ci.txt,requirements.dev.txt)
+# if function syntax is $(if condition,then,[else])
+
+# From there you can use the exact same Makefile as above, and just update
+# install as follows:
+
+# Install requirements to the venv. If the venv doesn't exist, it will
+# be created. Install will run if setup.py or requirements files change
+install: .make/install
+# Install is an alias to this rule
+.make/install: .make  venv setup.py requirements.txt $(DEV_REQUIREMENTS)
+  $(VENV) pip install -r requirements.txt -r requirements.dev.txt
+  $(VENV) python setup.py install -e .
+</code></pre>
+<p>Obviously if your <code>requirements.ci.txt</code> doesn't specify the packages you need
+for linting, <code>make lint</code> will fail, but as long as it contains what you need
+for testing, <code>make test</code> will run just fine.</p>
+<h3 id="inside-and-outside-of-docker">Inside and Outside of Docker <div class="anchor-link" aria-hidden="true"><a href="#inside-and-outside-of-docker">⤶</a></div></h3>
+<p>Lots of folks mount their projects directly into Docker for development. This
+can be a problem with the above patterns, since packages installed on your
+local machine might not necessarily work in the Docker environment (since
+the Docker environment may well be an entirely different OS).</p>
+<p>Again, we can use some conditional magic to make this work with minimal
+modifications:</p>
+<pre><code class="language-Makefile"># See https://stackoverflow.com/questions/20010199/how-to-determine-if-a-process-runs-inside-lxc-docker
+# for a discussion on detecting if you're inside a Docker container. Here,
+# IN_CONTAINER will be &quot;true&quot; if we are in a container, and the empty string
+# otherwise.
+IN_CONTAINER := $(shell [ -e /proc/1/cgroup ] &amp;&amp; grep -q docker /proc/1/cgroup &amp;&amp; echo &quot;true&quot; || echo &quot;&quot;)
+VENV_DIR := $(if $(IN_CONTAINER),venv-linux,venv)
+VENV := source $(VENV_DIR)/bin/activate;
+
+# From there, we just update our venv and install rules like:
+
+# Make a venv in VENV_DIR if it does not exist
+$(VENV_DIR):
+  $(PYTHON) -m venv venv
+  touch venv
+
+# Install requirements to the venv. If the venv doesn't exist, it will
+# be created. Install will run if setup.py or requirements files change
+install: .make/install
+# Install is an alias to this rule
+.make/install: .make $(VENV_DIR) setup.py requirements.txt requirements.dev.txt
+  $(VENV) pip install -r requirements.txt -r requirements.dev.txt
+  $(VENV) python setup.py install -e .
+</code></pre>
+<h2 id="make-javascript">Make JavaScript <div class="anchor-link" aria-hidden="true"><a href="#make-javascript">⤶</a></div></h2>
+<p>Make is also really helpful in working on JavaScript/TypeScript projects.</p>
+<h3 id="node-modules">Node Modules <div class="anchor-link" aria-hidden="true"><a href="#node-modules">⤶</a></div></h3>
+<p>As with Python, Make can help to ensure that your local JS environment
+is up to date before running tests or running code:</p>
+<pre><code class="language-Makefile">
+.PHONY: install test
+
+# Run an npm install if we need to update our node_modules directory
+install: node_modules
+
+# We need to update our node_modules if package.json or package-lock.json
+# have changed.
+# We touch node_modules when we're finished b/c just adding or removing
+# things from a directory does not change the last-updated timestamp on
+# the directory itself. Touch does this for us.
+node_modules: package.json package-lock.json
+  npm install
+  touch node_modules
+
+# This will run our tests
+# It will run an npm install only if necessary, i.e. if package.json or
+# package-lock.json have changed
+test: node_modules
+  npx --no-install jest tests
+</code></pre>
+<p>At this point just running <code>make test</code> will handle setting up the project if needed,
+and on future runs, will automatically install any new dependencies before
+running tests. You can of course add similar rules for watching files for
+tests and anything else you'd like.</p>
+<h2 id="typescript-compiled-files">TypeScript Compiled Files <div class="anchor-link" aria-hidden="true"><a href="#typescript-compiled-files">⤶</a></div></h2>
+<p>Let's say your TS files are compiled into a <code>built</code> directory. You can
+make a <code>build</code> target that creates them as needed:</p>
+<pre><code class="language-Makefile">BUILT_FILES := $(shell find built -type f -name *.js)
+
+.PHONY: build
+
+# We're assuming we also have the `node_modules` target from above.
+
+# Install or update packages if needed, clean the build directory, and
+# compile TypeScript files.
+build: $(BUILT_FILES)
+
+# `build` is just an alias for this rule.
+$(BUILT_FILES): node_modules src/**/*.ts
+  rm -rf built
+  tsc
+
+# You can then require your built files to exist for other things like
+# running tests or running a local server if needed:
+run: $(BUILT_FILES)
+  npm run-script serve
+</code></pre>
+<p>Running <code>make build</code> will compile your TypeScript files into JavaScript files
+(but only if any of the TypeScript files have changed), and running
+<code>make run</code> will start your local server, again compiling your TypeScript
+files into JavaScript files first, but only if necessary.</p>
+<h2 id="make-limitations">Make Limitations <div class="anchor-link" aria-hidden="true"><a href="#make-limitations">⤶</a></div></h2>
+<h3 id="passing-arguments-to-commands">Passing Arguments to Commands <div class="anchor-link" aria-hidden="true"><a href="#passing-arguments-to-commands">⤶</a></div></h3>
+<p>There are of course some limitations to Make. One that you'll always need
+to work around when using Make as a task runner is that you cannot directly
+pass arguments to Make commands. However, because any variables defined on
+the CLI when you <em>call</em> <code>make</code> are passed into the Makefile, there is a relatively
+elegant workaround:</p>
+<pre><code class="language-Makefile">.PHONY: test
+
+# Run tests for the project
+test:
+  cargo test $(ARGS)
+</code></pre>
+<p>If <code>ARGS</code> is not defined, this just calls <code>cargo test</code>. Otherwise, it sticks
+whatever is in ARGS right there on the call to <code>cargo test</code>, so you can do
+something like:</p>
+<pre><code class="language-sh">make test ARGS=&quot;--test-threads 5 src/lib.rs&quot;
+</code></pre>
+<p>And it will run:</p>
+<pre><code class="language-sh">cargo test --test-threads 5 src/lib.rs
+</code></pre>
+<h3 id="becoming-arcane">Becoming Arcane <div class="anchor-link" aria-hidden="true"><a href="#becoming-arcane">⤶</a></div></h3>
+<p>There are a lot of things that can make a Makefile start to drift towards
+unintelligibility. It requires some discipline, but I hope that you've seen in
+this article that, with adequate explanatory comments,
+Makefiles are not too hard to read!</p>
+<p>If you're on a team using Make, please speak up and ensure that your teammates
+are documenting their Makefiles in a way that is as much as possible geared
+towards new users and people unfamiliar with Make. When people's first
+experience is with a poorly documented, obtuse Makefile, it often turns them
+off of the idea of Make altogether.</p>
+<h2 id="other-benefits-of-make">Other Benefits of Make <div class="anchor-link" aria-hidden="true"><a href="#other-benefits-of-make">⤶</a></div></h2>
+<p>There are a lot of utilities and benefits of Make that we haven't discussed.
+This section lists some other niceties that you get for free if you use Make,
+to serve as a jumping off point for further reading.</p>
+<ul>
+<li><a href="https://www.gnu.org/software/make/manual/html_node/Parallel.html">Automatic parallelism</a>
+with <code>make -j [N]</code>, where the optional <em>N</em> is the number of jobs to run in
+parallel. Make automatically retains rule ordering based on prerequisites and
+provides options to <a href="https://www.gnu.org/software/make/manual/html_node/Parallel-Output.html#Parallel-Output">synchronize output</a>
+to avoid the <a href="https://twitter.com/davidlohr/status/288786300067270656?s=20">parallel output problem</a></li>
+<li><a href="https://www.gnu.org/software/make/manual/html_node/Interrupts.html#Interrupts">Automatic cleanup</a>
+of partially written files if interrupted (e.g. by <code>Ctrl-c</code>)</li>
+<li><a href="https://www.gnu.org/software/make/manual/html_node/Errors.html#Errors">Configurable automatic cleanup</a>
+of targets when a rule's commands fail</li>
+<li><a href="https://www.gnu.org/software/make/manual/html_node/Chained-Rules.html#Chained-Rules">Ability to specify intermediate targets</a>,
+which will be deleted after the build</li>
+<li><a href="https://www.gnu.org/software/make/manual/html_node/One-Shell.html">Ability to use any shell for recipes</a>,
+including Python, JS, Bash, zsh, etc. (Note: unfortunately this feature was
+released in GNU Make 3.8.2, from 2010, and not in 3.8.1, from 2006, which
+is the version found by default on MacOS. If you want to use this feature on,
+a Mac, you'll need to install a more recent version of GNU Make.)</li>
+</ul>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2020-05-16</p>
+            <p>Tags: <a href="/tags.html#make">make</a>, <a href="/tags.html#makefiles">makefiles</a>, <a href="/tags.html#makefile">makefile</a>, <a href="/tags.html#python">python</a>, <a href="/tags.html#javascript">javascript</a>, <a href="/tags.html#rust">rust</a>, <a href="/tags.html#programming">programming</a>, <a href="/tags.html#unix">unix</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/creating-an-rss-feed.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2020-05-16
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2020-05-16 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>

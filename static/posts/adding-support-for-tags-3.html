@@ -47,7 +47,7 @@
 </nav>
     </header>
     <main>
-        <h1>Adding Tags to my Static Site: Part 3</h1>
+        <h1 id="adding-tags-to-my-static-site:-part-3">Adding Tags to my Static Site: Part 3 <div class="anchor-link" aria-hidden="true"><a href="#adding-tags-to-my-static-site:-part-3">⤶</a></div></h1>
 <ul>
 <li>Part 1 <a href="/posts/adding-support-for-tags-1.html">here</a></li>
 <li>Part 2 <a href="/posts/adding-support-for-tags-2.html">here</a></li>
@@ -68,7 +68,7 @@ and there are quite a few of these functions, since so far almost every
 page has gotten its own bespoke rendering function. I think we've well
 passed the <a href="https://en.wikipedia.org/wiki/Rule_of_three_(computer_programming)">Rule of Three</a>
 and that it's time to do some more refactoring.</p>
-<h2>Deciding How to Start</h2>
+<h2 id="deciding-how-to-start">Deciding How to Start <div class="anchor-link" aria-hidden="true"><a href="#deciding-how-to-start">⤶</a></div></h2>
 <p>So, we have a few of what I consider to be smells scattered throughout
 the code:</p>
 <ul>
@@ -87,7 +87,7 @@ to create smaller, dedicated functions, that may be easier to reuse)</li>
 <li>Extract shared logic into dedicated functions</li>
 <li>Replace bespoke functions with calls to generic ones that conform to the SRP</li>
 </ul>
-<h2>Collecting Parameters into Structures</h2>
+<h2 id="collecting-parameters-into-structures">Collecting Parameters into Structures <div class="anchor-link" aria-hidden="true"><a href="#collecting-parameters-into-structures">⤶</a></div></h2>
 <p>So, why do our functions have so many parameters? Well, largely because
 there are a lot of shared instances of parsers, templates, rendered HTML,
 etc. that it would be inefficient to make inside of each function. So, for
@@ -144,7 +144,7 @@ resources that are passed to all of our bespoke functions:</p>
 </code></pre>
 <p>There's no reason why we can't formalize this into a few more organized
 structs. Let's give it a shot.</p>
-<h3>Making constants constant</h3>
+<h3 id="making-constants-constant">Making constants constant <div class="anchor-link" aria-hidden="true"><a href="#making-constants-constant">⤶</a></div></h3>
 <p>Something that's peppered all over the code is calls to <a href="https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html"><code>include_str!</code></a>
 to pull in our template text as <code>&amp;'static str</code> variables. This is great,
 but it does necessitate defining a bunch of variables by hand, and passing
@@ -266,7 +266,7 @@ parsed <code>header</code> block. And finally we can delete all of the files we
 were keeping around after re-organizing the <code>templates</code> directory, since
 there are now no <a href="https://doc.rust-lang.org/1.7.0/std/macro.include_str!.html"><code>include_str!</code></a> calls referencing them that might
 cause compilation to fail.</p>
-<h4>Removing footer duplication</h4>
+<h4 id="removing-footer-duplication">Removing footer duplication <div class="anchor-link" aria-hidden="true"><a href="#removing-footer-duplication">⤶</a></div></h4>
 <p>One of the things this process helped me to realize is that I don't need
 so much duplication of footer navigation templates. Currently, there are
 <code>footer-nav-first.html</code>, <code>footer-nav-last.html</code>, and <code>footer-nav.html</code>.
@@ -374,7 +374,7 @@ fn generate_footer_nav_block&lt;S: AsRef&lt;str&gt;, T: AsRef&lt;str&gt;&gt;(
 </code></pre>
 <p>This allows us to delete our <code>footer-nav-first/last.html</code> files and remove
 them from our template string global.</p>
-<h3>Collecting shared runtime references</h3>
+<h3 id="collecting-shared-runtime-references">Collecting shared runtime references <div class="anchor-link" aria-hidden="true"><a href="#collecting-shared-runtime-references">⤶</a></div></h3>
 <p>Now that we handled one source of code bloat by refactoring our constants
 to be globally available rather than passed around all over the place,
 we can start working on wrangling the data and structs that must be
@@ -490,7 +490,7 @@ impl Context {
     }
 }
 </code></pre>
-<h3>Putting it together</h3>
+<h3 id="putting-it-together">Putting it together <div class="anchor-link" aria-hidden="true"><a href="#putting-it-together">⤶</a></div></h3>
 <p>Now that we've got our templates strings in a global constant and our actual
 templates and blocks all stored in a <code>Context</code>, we can update most of our
 functions to simply take the <code>Context</code> object.</p>
@@ -534,7 +534,7 @@ like this:</p>
 }
 </code></pre>
 <p>Definitely much cleaner!</p>
-<h2>Pulling functions into methods</h2>
+<h2 id="pulling-functions-into-methods">Pulling functions into methods <div class="anchor-link" aria-hidden="true"><a href="#pulling-functions-into-methods">⤶</a></div></h2>
 <p>As I was working on the refactoring above, I noticed that I was winding up
 with lots and lots of functions that took either solely or as their first
 parameter a <code>&amp;Context</code>. That suggests to me that they might be better
@@ -589,13 +589,13 @@ of this series.</p>
     </nav>
     <details class="footer-license">
         <summary>
-            &copy; Matthew Planchard, 2019-07-30
+            &copy; Matthew Planchard, 2020-05-16
             <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
                 (CC BY-SA 4.0)
             </a>
         </summary>
         <p>
-            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            &copy; 2020-05-16 by Matthew Planchard &mdash; unless otherwise noted,
             all content is made available under the
             <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                 Creative Commons Attribution-ShareAlike 4.0 International License

@@ -47,9 +47,9 @@
 </nav>
     </header>
     <main>
-        <h1>Adding Tags to my Static Site: Part 2</h1>
+        <h1 id="adding-tags-to-my-static-site:-part-2">Adding Tags to my Static Site: Part 2 <div class="anchor-link" aria-hidden="true"><a href="#adding-tags-to-my-static-site:-part-2">⤶</a></div></h1>
 <p>For Part 1, go <a href="/posts/adding-support-for-tags-1.html">here</a></p>
-<h2>Getting a mapping of tags to Posts</h2>
+<h2 id="getting-a-mapping-of-tags-to-posts">Getting a mapping of tags to Posts <div class="anchor-link" aria-hidden="true"><a href="#getting-a-mapping-of-tags-to-posts">⤶</a></div></h2>
 <p>So, after part one, we have a nice <code>Metadata</code> struct for each post,
 which contains a <code>Vec&lt;String&gt;</code> of tags, which is constructed from the
 first few lines of each of our markdown files.</p>
@@ -160,7 +160,7 @@ an <code>Iterator</code> over <code>&amp;mut T</code>, mutable references to <co
 that we can satisfy our trait bound of <code>IntoIterator&lt;Item = &amp;Post&gt;</code> by
 passing in a <em>reference</em> to our <code>Vec&lt;Post&gt;</code>, without any further conversion
 required.</p>
-<h2>Adding HTML for the tag overview page</h2>
+<h2 id="adding-html-for-the-tag-overview-page">Adding HTML for the tag overview page <div class="anchor-link" aria-hidden="true"><a href="#adding-html-for-the-tag-overview-page">⤶</a></div></h2>
 <p>Now that we have a tag -&gt; post mapping, we can write some HTML. Our
 tags overview will be a combination of several snippets. The page will contain
 the usual header and footer. The content will be a listing of tags, with
@@ -231,13 +231,13 @@ get to actually doing tags.</p>
     </nav>
     <details class="footer-license">
         <summary>
-            &copy; Matthew Planchard, 2019-07-30
+            &copy; Matthew Planchard, 2020-05-16
             <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
                 (CC BY-SA 4.0)
             </a>
         </summary>
         <p>
-            &copy; 2019-07-30 by Matthew Planchard &mdash; unless otherwise noted,
+            &copy; 2020-05-16 by Matthew Planchard &mdash; unless otherwise noted,
             all content is made available under the
             <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                 Creative Commons Attribution-ShareAlike 4.0 International License
