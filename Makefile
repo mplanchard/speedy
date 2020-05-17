@@ -23,5 +23,11 @@ $(POST_OUTPUT): $(POST_INPUT)
 run: $(POST_OUTPUT)
 	cargo run run
 
+# Watch for changes and run the server.
+# Upon changes, regenerate posts if necessary and then rerun the server.
 watch: $(POST_OUTPUT)
 	cargo watch --shell "$(MAKE) run"
+
+# Deploy static site to Azure.
+deploy: $(POST_OUTPUT)
+	azcopy sync static/ 'https://mplanchardspeedyblog.blob.core.windows.net/$web' --recursive
