@@ -129,12 +129,13 @@ a:link {
 }
 
 a:visited {
-    color: gray;
+    color: #666666;
 }
 
 code {
     font-family: 'Fira Mono', monospace;
     background-color: oldlace;
+    color: #bd532a;
 }
 
 address {
