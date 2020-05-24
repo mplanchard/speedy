@@ -238,7 +238,7 @@ impl PreRenderedTemplates {
     }
 
     fn render_footer_common(template: &liquid::Template) -> String {
-        let today = format!("{}", Local::today().format("%Y-%m-%d"));
+        let today = format!("{}", Local::today().format("%Y"));
         let globals = liquid::value::Object::from_iter(vec![("year".into(), to_liquid_val(today))]);
 
         template
