@@ -4,13 +4,21 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2020-05-16T00:00:00+00:00</updated>
+    <updated>2020-05-24T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>Communication, Education, and Engineering</title>
+    <link href="https://blog.mplanchard.com/posts/communication-education-and-engineering.html"/>
+    <id>https://blog.mplanchard.com/posts/communication-education-and-engineering.html</id>
+    <updated>2020-05-24T00:00:00+00:00</updated>
+    <summary>Communication is fundamental to the success of an engineering organization, and communication as a core value must be actively promoted in order for the organization to be successful. Most of our necessary communication is either for purposes of learning or education, and it should be expected that leadership roles involve a substantial amount of educational communication. We must therefore be explicit in our expectations and hiring that good communication is just as important as technical ability. To ensure we can evaluate these expectations for current and future employees, we must codify what we mean by good communication and ensure that we take steps to share and enforce that vision.</summary>
+</entry>
+
 <entry>
     <title>Make and Makefiles are Awesome</title>
     <link href="https://blog.mplanchard.com/posts/make-and-makefiles-are-awesome.html"/>
