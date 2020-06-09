@@ -65,14 +65,11 @@
 <ul>
 <li><a href="#directory-targets">Directory Targets</a></li>
 <li><a href="#aliases">Aliases</a></li>
+<li><a href="#empty-targets">Empty Targets</a></li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-</li>
-<li><a href="#this-rule-defines-how-to-satisfy-the-prereq-for-install">This rule defines how to satisfy the prereq for install</a>
-<ul>
 <li><a href="#make-python">Make Python</a>
 <ul>
 <li><a href="#virtual-environment-management">Virtual Environment Management</a></li>
@@ -348,7 +345,7 @@ with that, we can make rules that have other rules' targets as their
 prerequisites, creating what are essentially aliases.</p>
 <p>As an example, let's consider a node project where I want to run <code>npm install</code>
 any time <code>package.json</code> or <code>package-lock.json</code> change:</p>
-<pre><code class="language-Makefile:">.PHONY: install
+<pre><code class="language-Makefile">.PHONY: install
 
 install: node_modules  # this rule has no recipe, just a prereq.
 

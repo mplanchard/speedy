@@ -21,7 +21,7 @@ summary: Make and its associated Makefiles have been around forever, and have go
     - [Makefile Rules Patterns](#makefile-rules-patterns)
       - [Directory Targets](#directory-targets)
       - [Aliases](#aliases)
-- [This rule defines how to satisfy the prereq for install](#this-rule-defines-how-to-satisfy-the-prereq-for-install)
+      - [Empty Targets](#empty-targets)
   - [Make Python](#make-python)
     - [Virtual Environment Management](#virtual-environment-management)
     - [Different Environments, Different Requirements](#different-environments-different-requirements)
@@ -352,7 +352,7 @@ prerequisites, creating what are essentially aliases.
 As an example, let's consider a node project where I want to run `npm install`
 any time `package.json` or `package-lock.json` change:
 
-```Makefile:
+```Makefile
 .PHONY: install
 
 install: node_modules  # this rule has no recipe, just a prereq.
