@@ -65,11 +65,14 @@
 <ul>
 <li><a href="#directory-targets">Directory Targets</a></li>
 <li><a href="#aliases">Aliases</a></li>
-<li><a href="#empty-targets">Empty Targets</a></li>
 </ul>
 </li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a href="#this-rule-defines-how-to-satisfy-the-prereq-for-install">This rule defines how to satisfy the prereq for install</a>
+<ul>
 <li><a href="#make-python">Make Python</a>
 <ul>
 <li><a href="#virtual-environment-management">Virtual Environment Management</a></li>
@@ -80,9 +83,9 @@
 <li><a href="#make-javascript">Make JavaScript</a>
 <ul>
 <li><a href="#node-modules">Node Modules</a></li>
+<li><a href="#typescript-compiled-files">TypeScript Compiled Files</a></li>
 </ul>
 </li>
-<li><a href="#typescript-compiled-files">TypeScript Compiled Files</a></li>
 <li><a href="#make-limitations">Make Limitations</a>
 <ul>
 <li><a href="#passing-arguments-to-commands">Passing Arguments to Commands</a></li>
@@ -317,7 +320,10 @@ INPUT_FILES = $(shell find foo-in -type f *.in)
 # Ensure foo-out exists and find all output files in the dir
 OUTPUT_FILES = $(shell mkdir -p foo-out &amp;&amp; find foo-out -type f *.out)
 
-$(OUTPUT_FILES): $(INPUT_FILES)
+# The &amp;: defines a group target. For group targets, the rule will only
+# run once even if there are multiple target files. A regular `:` will
+# run the rule for each target file that is older than the prereqs.
+$(OUTPUT_FILES)&amp;: $(INPUT_FILES)
   # Note you need to use $$ to pass a $ to the shell, since it's a reserved
   # character in makefiles.
   for i in $(INPUT_FILES); do touch &quot;foo-out/$$i.out&quot;; done
@@ -527,7 +533,7 @@ test: node_modules
 and on future runs, will automatically install any new dependencies before
 running tests. You can of course add similar rules for watching files for
 tests and anything else you'd like.</p>
-<h2 id="typescript-compiled-files">TypeScript Compiled Files <div class="anchor-link" aria-hidden="true"><a href="#typescript-compiled-files">⤶</a></div></h2>
+<h3 id="typescript-compiled-files">TypeScript Compiled Files <div class="anchor-link" aria-hidden="true"><a href="#typescript-compiled-files">⤶</a></div></h3>
 <p>Let's say your TS files are compiled into a <code>built</code> directory. You can
 make a <code>build</code> target that creates them as needed:</p>
 <pre><code class="language-Makefile">BUILT_FILES := $(shell find built -type f -name *.js)

@@ -21,14 +21,14 @@ summary: Make and its associated Makefiles have been around forever, and have go
     - [Makefile Rules Patterns](#makefile-rules-patterns)
       - [Directory Targets](#directory-targets)
       - [Aliases](#aliases)
-      - [Empty Targets](#empty-targets)
+- [This rule defines how to satisfy the prereq for install](#this-rule-defines-how-to-satisfy-the-prereq-for-install)
   - [Make Python](#make-python)
     - [Virtual Environment Management](#virtual-environment-management)
     - [Different Environments, Different Requirements](#different-environments-different-requirements)
     - [Inside and Outside of Docker](#inside-and-outside-of-docker)
   - [Make JavaScript](#make-javascript)
     - [Node Modules](#node-modules)
-  - [TypeScript Compiled Files](#typescript-compiled-files)
+    - [TypeScript Compiled Files](#typescript-compiled-files)
   - [Make Limitations](#make-limitations)
     - [Passing Arguments to Commands](#passing-arguments-to-commands)
     - [Becoming Arcane](#becoming-arcane)
@@ -316,7 +316,10 @@ INPUT_FILES = $(shell find foo-in -type f *.in)
 # Ensure foo-out exists and find all output files in the dir
 OUTPUT_FILES = $(shell mkdir -p foo-out && find foo-out -type f *.out)
 
-$(OUTPUT_FILES): $(INPUT_FILES)
+# The &: defines a group target. For group targets, the rule will only
+# run once even if there are multiple target files. A regular `:` will
+# run the rule for each target file that is older than the prereqs.
+$(OUTPUT_FILES)&: $(INPUT_FILES)
   # Note you need to use $$ to pass a $ to the shell, since it's a reserved
   # character in makefiles.
   for i in $(INPUT_FILES); do touch "foo-out/$$i.out"; done
@@ -567,7 +570,7 @@ and on future runs, will automatically install any new dependencies before
 running tests. You can of course add similar rules for watching files for
 tests and anything else you'd like.
 
-## TypeScript Compiled Files
+### TypeScript Compiled Files
 
 Let's say your TS files are compiled into a `built` directory. You can
 make a `build` target that creates them as needed:
