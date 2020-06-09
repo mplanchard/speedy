@@ -33,4 +33,4 @@ watch:
 # Deploy static site to Azure.
 deploy: static
 	azcopy sync './static' 'https://mplanchardspeedyblog.blob.core.windows.net/$$web' --recursive=true
-	az cdn endpoint purge --resource-group mplanchardspeedyblog --profile-name speedyblogcdn --name mplanchardspeedyblog --content-paths = '*'
+	az cdn endpoint purge --resource-group mplanchardspeedyblog --profile-name speedyblogcdn --name mplanchardspeedyblog --content-paths '/*'
