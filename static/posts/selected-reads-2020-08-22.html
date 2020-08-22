@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - Selected Reads (2020-08-22)</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1 id="selected-reads-(2020-08-22)">Selected Reads (2020-08-22) <div class="anchor-link" aria-hidden="true"><a href="#selected-reads-(2020-08-22)">⤶</a></div></h1>
+<p>This is a selection of articles, videos, tweets, and sundry that I’ve found
+interesting over the last week or so.</p>
+<a href="https://medium.com/@steve.yegge/dear-google-cloud-your-deprecation-policy-is-killing-you-ee7525dc05dc"><h2 id="dear-google-cloud:-your-deprecation-policy-is-killing-you">Dear Google Cloud: Your Deprecation Policy is Killing You <div class="anchor-link" aria-hidden="true"><a href="#dear-google-cloud:-your-deprecation-policy-is-killing-you">⤶</a></div></a></h2>
+<p><strong><strong>Author:</strong></strong> Steve Yegge</p>
+<p>A great post (rant, really) by Steve Yegge on Google Cloud’s deprecation policy,
+how it relates to google’s internal culture, and how it affects their customers.
+Largely the inspiration for my recent post on <a href="https://blog.mplanchard.com/posts/why-are-we-so-eager-to-break-things.html">software breakage within teams</a>.</p>
+<a href="https://lexi-lambda.github.io/blog/2020/08/13/types-as-axioms-or-playing-god-with-static-types/"><h2 id="types-as-axioms,-or:-playing-god-with-static-types">Types as axioms, or: playing god with static types <div class="anchor-link" aria-hidden="true"><a href="#types-as-axioms,-or:-playing-god-with-static-types">⤶</a></div></a></h2>
+<p><strong><strong>Author:</strong></strong> Alexis King</p>
+<p>A new post from one of my favorite blogs. The same author’s <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/"><em>Parse, Don’t Validate</em></a>
+is probably the post on software engineering that I recommend the most often.
+This one goes into types as axioms, encouraging us to think of types as
+positive-space definitions of what our desired program behavior, rather than
+as negative-space restrictions. This one was discussed in our work slack, and
+one of my colleagues posted <a href="https://www.youtube.com/watch?v=uuTkuy9D5lY&amp;feature=share">this video</a> of philosopher <a href="https://en.wikipedia.org/wiki/Slavoj_%C5%BDi%C5%BEek">Slavoj Žižek</a> discussing
+the intricacies of negation, which was both really interesting and a good
+companion for the topics discussed in the blog post.</p>
+<a href="http://rachelbythebay.com/w/2020/08/17/potato/"><h2 id="baking-those-potatoes-with-microservices-and-vendors">Baking those Potatoes with Microservices and Vendors <div class="anchor-link" aria-hidden="true"><a href="#baking-those-potatoes-with-microservices-and-vendors">⤶</a></div></a></h2>
+<p><strong><strong>Author:</strong></strong> Rachel by the Bay</p>
+<p>I liked this post setting up “hot potato” and “cold potato” routing as a
+metaphor for team dynamics, particularly in a microservices context, where
+“hot potato” refers to those people or teams who immediately take ownership
+and dive into a problem, while “cold potato” refers to those who tend to
+ignore or pass ownership on to other teams.</p>
+<a href="https://blog.rust-lang.org/2020/08/18/laying-the-foundation-for-rusts-future.html"><h2 id="laying-the-foundation-for-rust's-future">Laying the Foundation for Rust's future <div class="anchor-link" aria-hidden="true"><a href="#laying-the-foundation-for-rust's-future">⤶</a></div></a></h2>
+<p><strong><strong>Author:</strong></strong> Rust Core Team</p>
+<p>Like most of us, I was upset by the news that Mozilla had to lay off about
+a quarter of its workforce. I have been a Firefox user since 2004, other
+than a brief flirtation with Chrome when it was new, and I appreciate all
+the work Mozilla does to promote an open web. Rust was created at Mozilla,
+and while I knew that Rust’s governance was very intentionally community-driven
+and not dependent on Mozilla, I was very glad to see that the core team
+is creating a foundation so that they can manage the financial and
+contractual requirements the language requires.</p>
+<h2 id="rustconf-2020">RustConf 2020 <div class="anchor-link" aria-hidden="true"><a href="#rustconf-2020">⤶</a></div></h2>
+<p>I’m going to be writing an entire post on RustConf, but here are a few quick
+links to some of my favorite talks. All of the talks were great, but these
+are the ones I think I will be most frequently referring people to.</p>
+<a href="https://www.youtube.com/watch?v=IwPRu5FhfIQ"><h3 id="opening-keynote">Opening Keynote <div class="anchor-link" aria-hidden="true"><a href="#opening-keynote">⤶</a></div></a></h3>
+<p><strong><strong>Presenter:</strong></strong> Rust Core Team</p>
+<p>I really dug the opening keynote of this year’s conference, which emphasized
+the main values of the Rust project (people, empathy) and talked about
+how it’s been Rust’s position from the beginning that software is inherently
+political, and to create a language and a community in which <em>everyone</em>
+is empowered to build software, you must face the politics head-on, which
+indeed the Rust project has consistently done. This presentation highlighted
+how the focus of the language team on user community and empathy has helped
+to make Rust the successful and much-loved language that it is.</p>
+<a href="https://www.youtube.com/watch?v=rAF8mLI0naQ"><h3 id="error-handling-isn't-all-about-errors">Error Handling Isn't All About Errors <div class="anchor-link" aria-hidden="true"><a href="#error-handling-isn't-all-about-errors">⤶</a></div></a></h3>
+<p><strong><strong>Presenter:</strong></strong> Jane Lusby (author of <a href="https://docs.rs/eyre/0.6.0/eyre/">eyre</a>)</p>
+<p>A relatively deep dive into how Rust’s trait system and approach to error
+handling enables a couple of points of differentiation not often found in other
+languages: first, that there is a clear difference in idiomatic handling
+of recoverable vs. unrecoverable errors, and second, that the Error trait
+enables a differentiation between errors and error reporters.</p>
+<a href="https://www.youtube.com/watch?v=BBvcK_nXUEg"><h3 id="rust-for-non-systems-programmers">Rust for Non-Systems Programmers <div class="anchor-link" aria-hidden="true"><a href="#rust-for-non-systems-programmers">⤶</a></div></a></h3>
+<p><strong><strong>Presenter:</strong></strong> Rebecca Turner</p>
+<p>I was really glad to see this talk at the conference. It’s an exploration
+of writing a simple Rust program from the perspective of someone coming
+from a dynamic language like Python, and it presents some techniques that
+you can use to speed up your initial forays into the language, especially
+when writing something for your own edification (don’t be afraid to unwrap,
+don’t be afraid to clone, etc.). This will go straight into my list of
+resources to send people who are getting into Rust for the first time.</p>
+<a href="https://www.youtube.com/watch?v=RNsEsZbXE-4"><h3 id="learning-empathy-from-pokémon-blue">Learning Empathy from Pokémon Blue <div class="anchor-link" aria-hidden="true"><a href="#learning-empathy-from-pokémon-blue">⤶</a></div></a></h3>
+<p><strong><strong>Presenter:</strong></strong> Siân Griffin</p>
+<p>The closing keynote, this talk was not particularly rust-specific, but was
+without a doubt one of the more interesting talks I’ve ever seen. It takes
+a deep dive into the MissingNo rare candy glitch from Pokémon Blue, with
+Rust examples of what Siân was able to learn about how the original game
+worked. This was an amazing exploration both into the constraints of the
+programming required for this generation of games and the subtle
+ways that small, seemingly innocuous bugs can work together to
+create entirely unexpected effects. A must-watch!</p>
+<a href="https://twitter.com/bretdevereaux/status/1295909929228873728?s=21"><h2 id="university-funding-and-covid-preparedness">University Funding and COVID preparedness <div class="anchor-link" aria-hidden="true"><a href="#university-funding-and-covid-preparedness">⤶</a></div></a></h2>
+<p><strong><strong>Author:</strong></strong> Bret Devereux</p>
+<p>A twitter thread from the author of one of my absolute favorite <a href="https://acoup.blog/">blogs</a>
+(an ancient military historian who often writes about fantasy and science
+fiction, his six-post series on the <a href="https://acoup.blog/2019/05/10/collections-the-siege-of-gondor/">tactics and strategy at the Siege of Gondor</a>
+is absolute gold, as is his exploration of <a href="https://acoup.blog/2019/08/16/collections-this-isnt-sparta-part-i-spartan-school/">what Sparta was <em>actually</em> like</a>).
+Bret Devereux here talks about <em>why</em> it would’ve been financial suicide for
+colleges to not attempt reopening, given the last 20 years or so of cuts to
+public funding for higher education, increased reliance on adjunct teaching
+staff, flat professor salaries, and ballooning administrative costs. A clear
+and cogent call for change in the way we fund our colleges, I found myself
+nodding along vigorously, as his points all matched exactly what I saw in
+my graduate program.</p>
+<a href="https://arstechnica.com/?p=1697546"><h2 id="bill-gates-interview-on-the-united-states'-covid-situation">Bill Gates Interview on the United States' COVID Situation <div class="anchor-link" aria-hidden="true"><a href="#bill-gates-interview-on-the-united-states'-covid-situation">⤶</a></div></a></h2>
+<p>This interview posted to Ars Technica is a really interesting one. I found particularly
+interesting Gates’ stance on political donations, and his assessment of the
+current state of COVID testing in the United States.</p>
+<h2 id="politics">Politics <div class="anchor-link" aria-hidden="true"><a href="#politics">⤶</a></div></h2>
+<p>I’m not generally interested in making this blog super political, but it
+certainly does seem to me that the current president is hell-bent on following
+what is a distressingly tyrannical playbook. As such, I was very glad to see
+that the main speeches made this week at the Democratic National Convention
+were without exception excellent.</p>
+<p>Even if you’ve already decided that you’ll vote for literally any human being
+with a pulse other than Trump like I had done, I think that these speeches are
+worth watching, if only to feel that warm fuzzy feeling again of watching
+leaders who are capable of stringing together coherent sentences.</p>
+<a href="https://twitter.com/michelleobama/status/1295552611026780160?s=21"><h3 id="michelle-obama-dnc-speech">Michelle Obama DNC Speech <div class="anchor-link" aria-hidden="true"><a href="#michelle-obama-dnc-speech">⤶</a></div></a></h3>
+<p>The former first lady makes a moving exhortation that this is one of the most
+important elections of our lifetimes, and that even if you normally detest
+politics, there has never been a more important time to exercise your right
+to vote.</p>
+<a href="https://www.axios.com/obama-dnc-speech-d7326f30-dab1-4c1c-af78-ff1dc5f28f8d.html"><h3 id="barack-obama-dnc-speech">Barack Obama DNC Speech <div class="anchor-link" aria-hidden="true"><a href="#barack-obama-dnc-speech">⤶</a></div></a></h3>
+<p>I had plenty of issues with particular things Obama did or didn’t do while he
+was president, but damn if he isn’t one of the best orators in modern
+history. I won’t lie, I’ve been hoping for the duration of the Trump presidency
+for Obama to take the gloves off and tell us what he really thinks, and this
+is I think one of the first times I’ve heard him be openly critical of the
+sitting president. Definitely worth a watch.</p>
+<a href="https://www.c-span.org/video/?c4901075/joe-biden-accepts-democratic-party-nomination-president"><h3 id="biden-nomination-speech">Biden Nomination Speech <div class="anchor-link" aria-hidden="true"><a href="#biden-nomination-speech">⤶</a></div></a></h3>
+<p>Seeing that even Fox News anchors were admitting that this was an undeniably
+strong speech, I checked it out. It’s a wonderful speech. Strong, emotional,
+well measured, and hitting all of the salient points, it’s moved me from being
+primarily an anti-Trump voter to an actually a little excited about Biden
+voter.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2020-08-22</p>
+            <p>Tags: <a href="/tags.html#google">google</a>, <a href="/tags.html#haskell">haskell</a>, <a href="/tags.html#software">software</a>, <a href="/tags.html#politics">politics</a>, <a href="/tags.html#rust">rust</a>, <a href="/tags.html#RustConf2020">RustConf2020</a>, <a href="/tags.html#covid">covid</a>, <a href="/tags.html#teams">teams</a>, <a href="/tags.html#academics">academics</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/why-are-we-so-eager-to-break-things.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2020
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2020 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>

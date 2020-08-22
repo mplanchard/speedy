@@ -31,6 +31,9 @@ watch:
 	cargo watch --shell "$(MAKE) run"
 
 # Deploy static site to Azure.
+# note: deploying requires the `az` cli and the `azcopy` utility.
+# `azcopy` can require running a `keyctl new_session` before running `azcopy login`
+# on linux.
 deploy: static
 	azcopy sync './static' 'https://mplanchardspeedyblog.blob.core.windows.net/$$web' --recursive=true
 	az cdn endpoint purge --resource-group mplanchardspeedyblog --profile-name speedyblogcdn --name mplanchardspeedyblog --content-paths '/*'

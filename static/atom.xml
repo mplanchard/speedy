@@ -4,13 +4,21 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2020-08-20T00:00:00+00:00</updated>
+    <updated>2020-08-22T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>Selected Reads (2020-08-22)</title>
+    <link href="https://blog.mplanchard.com/posts/selected-reads-2020-08-22.html"/>
+    <id>https://blog.mplanchard.com/posts/selected-reads-2020-08-22.html</id>
+    <updated>2020-08-22T00:00:00+00:00</updated>
+    <summary>It&rsquo;s been a wild ride this week, with RustConf and the Democratic National Convention generating a significant amount of interesting content to digest, along with the usual steady trickle of interesting reads.</summary>
+</entry>
+
 <entry>
     <title>Why Are We So Eager to Break Things?</title>
     <link href="https://blog.mplanchard.com/posts/why-are-we-so-eager-to-break-things.html"/>
