@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
 use std::iter::FromIterator;
+use std::cmp::Ordering;
 
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use clap::{App, ArgMatches, SubCommand};
@@ -593,6 +594,8 @@ impl<'a> Context<'a> {
                     post.metadata
                         .tags
                         .iter()
+                        .sorted_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()))
+                        .iter()
                         .map(|t| self.render_tag_link(&t))
                         .collect::<Vec<String>>()
                         .join(", "),
@@ -720,6 +723,25 @@ fn parse_template_str<S: AsRef<str>>(parser: &liquid::Parser, template: S) -> li
 
 fn to_liquid_val<S: AsRef<str>>(string: S) -> liquid::value::Value {
     liquid::value::Value::scalar(string.as_ref().to_owned())
+}
+
+
+trait SortedByExt: Iterator {
+    fn sorted_by<F>(self, compare: F) -> Vec<Self::Item>
+        where
+            F: FnMut(&Self::Item, &Self::Item) -> Ordering;
+}
+
+impl<I> SortedByExt for I where I: Iterator
+{
+    fn sorted_by<F>(self, compare: F) -> Vec<I::Item>
+        where
+            F: FnMut(&I::Item, &I::Item) -> Ordering
+    {
+        let mut copy: Vec<I::Item> = self.collect();
+        copy.sort_by(compare);
+        copy
+    }
 }
 
 fn generate() {
