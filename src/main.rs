@@ -637,7 +637,7 @@ impl<'a> Context<'a> {
 
     fn render_tags_page_content(&self) -> String {
         let mut tags = self.tag_map.keys().collect::<Vec<&&str>>();
-        tags.sort();
+        tags.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()) );
 
         tags.into_iter()
             .map(|t| self.render_tag_for_tags_page(t))
