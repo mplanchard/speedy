@@ -4,13 +4,21 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2020-05-24T00:00:00+00:00</updated>
+    <updated>2020-08-20T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>Why Are We So Eager to Break Things?</title>
+    <link href="https://blog.mplanchard.com/posts/why-are-we-so-eager-to-break-things.html"/>
+    <id>https://blog.mplanchard.com/posts/why-are-we-so-eager-to-break-things.html</id>
+    <updated>2020-08-20T00:00:00+00:00</updated>
+    <summary>An exploration of some of the ways we intentionally or unintentionally make extra work and churn for our colleagues, how we justify it to ourselves, and how we can avoid it.</summary>
+</entry>
+
 <entry>
     <title>Communication, Education, and Engineering</title>
     <link href="https://blog.mplanchard.com/posts/communication-education-and-engineering.html"/>
