@@ -725,6 +725,10 @@ fn to_liquid_val<S: AsRef<str>>(string: S) -> liquid::value::Value {
 }
 
 
+// *********************************************************************
+// Add a .sorted_by method to all iterators
+// *********************************************************************
+
 struct SortedBy<T> {
     items: Vec<T>,
 }
@@ -759,6 +763,8 @@ impl<I> SortedByExt for I where I: Iterator
         SortedBy::new(self.collect(), compare)
     }
 }
+
+// *********************************************************************
 
 fn generate() {
     let context_data = ContextData::new();
