@@ -595,7 +595,6 @@ impl<'a> Context<'a> {
                         .tags
                         .iter()
                         .sorted_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()))
-                        .iter()
                         .map(|t| self.render_tag_link(&t))
                         .collect::<Vec<String>>()
                         .join(", "),
@@ -726,21 +725,38 @@ fn to_liquid_val<S: AsRef<str>>(string: S) -> liquid::value::Value {
 }
 
 
+struct SortedBy<T> {
+    items: Vec<T>,
+}
+impl<T> SortedBy<T> {
+    fn new<F>(mut items: Vec<T>, compare: F) -> Self
+        where F: FnMut(&T, &T) -> Ordering
+    {
+        items.sort_by(compare);
+        items.reverse();
+        SortedBy { items }
+    }
+}
+impl<T> Iterator for SortedBy<T> {
+   type Item = T;
+   fn next(&mut self) -> Option<Self::Item> {
+       self.items.pop()
+   }
+}
+
 trait SortedByExt: Iterator {
-    fn sorted_by<F>(self, compare: F) -> Vec<Self::Item>
+    fn sorted_by<F>(self, compare: F) -> SortedBy<Self::Item>
         where
             F: FnMut(&Self::Item, &Self::Item) -> Ordering;
 }
 
 impl<I> SortedByExt for I where I: Iterator
 {
-    fn sorted_by<F>(self, compare: F) -> Vec<I::Item>
+    fn sorted_by<F>(self, compare: F) -> SortedBy<Self::Item>
         where
             F: FnMut(&I::Item, &I::Item) -> Ordering
     {
-        let mut copy: Vec<I::Item> = self.collect();
-        copy.sort_by(compare);
-        copy
+        SortedBy::new(self.collect(), compare)
     }
 }
 
