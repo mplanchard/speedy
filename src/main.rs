@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::iter::FromIterator;
 use std::cmp::Ordering;
+use std::vec::IntoIter;
 
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use clap::{App, ArgMatches, SubCommand};
@@ -294,6 +295,7 @@ impl ContextData {
         options.insert(MDOptions::ENABLE_FOOTNOTES);
         options.insert(MDOptions::ENABLE_TABLES);
         options.insert(MDOptions::ENABLE_STRIKETHROUGH);
+        options.insert(MDOptions::ENABLE_TASKLISTS);
         options
     }
 }
@@ -729,38 +731,24 @@ fn to_liquid_val<S: AsRef<str>>(string: S) -> liquid::value::Value {
 // Add a .sorted_by method to all iterators
 // *********************************************************************
 
-struct SortedBy<T> {
-    items: Vec<T>,
-}
-impl<T> SortedBy<T> {
-    fn new<F>(mut items: Vec<T>, compare: F) -> Self
-        where F: FnMut(&T, &T) -> Ordering
-    {
-        items.sort_by(compare);
-        items.reverse();
-        SortedBy { items }
-    }
-}
-impl<T> Iterator for SortedBy<T> {
-   type Item = T;
-   fn next(&mut self) -> Option<Self::Item> {
-       self.items.pop()
-   }
-}
-
+/// An extension trait for the builtin Iterator.
+/// As long as this trait is in scope, .sorted_by() will be available.
 trait SortedByExt: Iterator {
-    fn sorted_by<F>(self, compare: F) -> SortedBy<Self::Item>
+    fn sorted_by<F>(self, compare: F) -> IntoIter<Self::Item>
         where
             F: FnMut(&Self::Item, &Self::Item) -> Ordering;
 }
 
+/// A blanket implementation for all iterators of .sorted_by()
 impl<I> SortedByExt for I where I: Iterator
 {
-    fn sorted_by<F>(self, compare: F) -> SortedBy<Self::Item>
+    fn sorted_by<F>(self, compare: F) -> IntoIter<Self::Item>
         where
             F: FnMut(&I::Item, &I::Item) -> Ordering
     {
-        SortedBy::new(self.collect(), compare)
+        let mut items: Vec<Self::Item> = self.collect();
+        items.sort_by(compare);
+        items.into_iter()
     }
 }
 

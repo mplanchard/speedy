@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - Extending Rust Builtins: Adding an Iterator Method</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1 id="extending-rust-builtins:-adding-an-iterator-method">Extending Rust Builtins: Adding an Iterator Method <div class="anchor-link" aria-hidden="true"><a href="#extending-rust-builtins:-adding-an-iterator-method">⤶</a></div></h1>
+<p><a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Iterators</a> are one of Rust's nicest features, allowing you to easily write
+lazily evaluated, declarative code. However, there are occasional times when
+I find myself wishing for some iterator method that isn't provided on the
+default trait. Unlike many languages, Rust makes it easy to extend builtins
+safely. In this post, we'll explore adding a <code>.sorted_by()</code> Iterator method,
+allowing you to provide a sorting function in your iterator chain.</p>
+<p>Note: the solution here is largely for the sake of example. Please read
+the caveats in the conclusions before using this extension yourself.</p>
+<h2 id="defining-the-problem">Defining the Problem <div class="anchor-link" aria-hidden="true"><a href="#defining-the-problem">⤶</a></div></h2>
+<p>The first step is to consider what we want, which is something equivalent
+to the existing <a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#method.sort_by">.sort_by()</a> function available for <code>Vec</code>, which takes a
+closure used to compare the items and uses them to sort the vec in place.
+We'd like our new method to be usable in an iterator chain, so we can
+do something like:</p>
+<pre><code>type Point = (usize, usize);
+
+fn shift_points_right_and_sort() -&gt; Vec&lt;Point&gt; {
+    // A sequence of (x, y) coordinate pairs
+    let points = vec![(1, 1), (2, 3), (7, 8), (1, 9)];
+    points
+        .iter()
+        // multiply all x-values by two
+        .map(|p| (p.0 * 2, p.1))
+        // sort the points by x-value
+        .sorted_by(|a, b| a.0.cmp(&amp;b.0))
+        // and then collect them into a new vec
+        .collect()
+}
+</code></pre>
+<p>So what we need for this is the following:</p>
+<ul>
+<li><input disabled="" type="checkbox"/>
+A method that, given an input iterator, returns a sorted output iterator</li>
+<li><input disabled="" type="checkbox"/>
+An extension to the builtin Iterator that lets us use this anywhere we're
+already using an iterator</li>
+</ul>
+<h2 id="how-to-get-what-we-need">How to Get What We Need <div class="anchor-link" aria-hidden="true"><a href="#how-to-get-what-we-need">⤶</a></div></h2>
+<p>First, let's look at the <code>.sort_by()</code> signature for a <code>Vec&lt;T&gt;</code>, so we can use it
+as the base for our solution:</p>
+<pre><code>pub fn sort_by&lt;F&gt;(&amp;mut self, compare: F) where
+    F: FnMut(&amp;T, &amp;T) -&gt; Ordering
+</code></pre>
+<p>The main difference will be that, since we intend to use this in a functional
+iterator chain, we will take non-mutable ownership of <code>self</code>, rather than
+taking a mutable reference to <code>self</code>.</p>
+<p>We can now work backwards to figure out what we need.</p>
+<p>In order to define any new generic method on any existing type, regardless
+of whether that type is a builtin, a custom type, or a third-party type,
+we'll need a <a href="https://doc.rust-lang.org/book/ch10-02-traits.html">trait</a> with a <a href="https://doc.rust-lang.org/book/ch10-02-traits.html#using-trait-bounds-to-conditionally-implement-methods">blanket implementation</a>.</p>
+<p>Using non-compiling pseudo-code, we know we want something like:</p>
+<pre><code>// We need a trait that extends the Iterator trait and adds a sorted_by() method
+trait SortedByExtension: Iterator {
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; AnIteratorOverSortedValues
+        // Item is an associated type on the Iterator trait, representing
+        // the type of value the iterator iterates over. We can reference
+        // that type with Self::Item.
+        where F: FnMut(&amp;Self::Item, &amp;Self::Item) -&gt; Ordering;
+}
+// We also need a blanket implementation for any iterator
+impl&lt;I&gt; SortedByExtension for I where I: Iterator
+{
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; AnIteratorOverSortedValues
+        where F: FnMut(I::Item, &amp;I::Item) -&gt; Ordering
+    {
+        // create &amp; return a new iterator over sorted values
+    }
+}
+</code></pre>
+<p>So now we just need to figure out how to return an iterator over sorted
+values. Note that the Iterator trait is a <em>trait</em>, not a concrete type,
+so we can't return that. We have a couple of options:</p>
+<ol>
+<li>Make our own type that implements Iterator</li>
+<li>Use an existing type that implements Iterator</li>
+</ol>
+<p>We'll look at both of these options below.</p>
+<h2 id="solution-one:-custom-iterator">Solution One: Custom Iterator <div class="anchor-link" aria-hidden="true"><a href="#solution-one:-custom-iterator">⤶</a></div></h2>
+<p>Let's look at writing our own customer Iterator first, because this is the more
+general-purpose solution. We can create a concrete type that is constructed
+from an iterator and, when iterated over, yields sorted values:</p>
+<pre><code>// This struct will keep track of our iteration context for
+// a given item type.
+struct SortedByIterator&lt;T&gt; {
+    items: Vec&lt;T&gt;,
+}
+// We can define a convenient constructor
+impl&lt;T&gt; SortedByIterator&lt;T&gt; {
+    fn new&lt;I, F&gt;(iter: I, compare: F) -&gt; Self
+    where
+        I: Iterator&lt;Item=T&gt;,  // I is an iterator over items of type T
+        F: FnMut(&amp;T, &amp;T) -&gt; Ordering,  // F is our comparison function
+    {
+        // Create a vector sorted like we want it
+        let mut items: Vec&lt;T&gt; = iter.collect();
+        items.sort_by(compare);
+        // We reverse it so we can get items off it with a simple pop()
+        items.reverse();
+        // And return the struct containing the vector
+        SortedByIterator { items }
+    }
+}
+// Implement Iterator for our struct
+impl&lt;T&gt; Iterator for SortedByIterator&lt;T&gt; {
+    // We iterate over items of the same type as contained in our
+    // SortedByIterator
+    type Item = T;
+    // Simply pop items off of the vec to iterate. pop() will return
+    // None when we hit the end, signifying the end of iteration
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        self.items.pop()
+    }
+}
+</code></pre>
+<p>We can then use this iterator in our blanket impl:</p>
+<pre><code>trait SortedByExtension: Iterator {
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; SortedByIterator&lt;Self::Item&gt;
+        where
+            F: FnMut(&amp;Self::Item, &amp;Self::Item) -&gt; Ordering;
+}
+
+impl&lt;I&gt; SortedByExtension for I where I: Iterator
+{
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; SortedByIterator&lt;Self::Item&gt;
+        where
+            F: FnMut(&amp;I::Item, &amp;I::Item) -&gt; Ordering
+    {
+        // All we need to do for our impl is return our new iterator type
+        SortedByIterator::new(self, compare)
+    }
+}
+</code></pre>
+<p>And that's it! Now all we need to do to use <code>.sorted_by()</code> for any Iterator
+is ensure we've imported it with <code>use whatever::SortedByExtension</code>.</p>
+<h2 id="solution-two:-existing-iterator">Solution Two: Existing Iterator <div class="anchor-link" aria-hidden="true"><a href="#solution-two:-existing-iterator">⤶</a></div></h2>
+<p>Note in our pseudocode example that we just wanted <code>AnIteratorOverSortedValues</code>.
+We can get this without writing our own custom iterator by taking advantage of
+a builtin type that implements iterator: <a href="https://doc.rust-lang.org/std/vec/struct.IntoIter.html">std::vec::IntoIter</a>, which is the
+iterator type that <code>Vec</code> uses to satisfy the <a href="https://doc.rust-lang.org/std/iter/trait.IntoIterator.html">IntoIterator</a> trait. Looking at
+the <a href="https://doc.rust-lang.org/std/vec/struct.IntoIter.html#impl-Iterator">implementation signature</a> of Iterator for <code>std::vec::IntoIter</code>, we see that
+it does indeed give us <code>Iterator&lt;T&gt;</code>, or <code>AnIteratorOverSortedValues</code>, provided
+we construct it from a vec of sorted values.</p>
+<p>So, we can avoid needing to make a custom iterator by rewriting our extension
+trait and blanket implementation as follows:</p>
+<pre><code>use std::vec::IntoIter;
+
+trait SortedByExtension: Iterator {
+    // Since IntoIter&lt;Self::Item&gt; satisfies our requirements, we
+    // can specify it as our output type here.
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; IntoIter&lt;Self::Item&gt;
+        where
+            F: FnMut(&amp;Self::Item, &amp;Self::Item) -&gt; Ordering;
+}
+
+// This implementation applies to anything that implements the Iterator trait
+impl&lt;I&gt; SortedByExtension for I where I: Iterator
+{
+    fn sorted_by&lt;F&gt;(self, compare: F) -&gt; IntoIter&lt;Self::Item&gt;
+        where
+            F: FnMut(&amp;I::Item, &amp;I::Item) -&gt; Ordering
+    {
+        // Here we just need to make a new vector, sort it, and
+        // return its IntoIter.
+        let mut items: Vec&lt;Self::Item&gt; = self.collect();
+        items.sort_by(compare);
+        items.into_iter()
+    }
+}
+</code></pre>
+<p>Solution two requires less code than solution one, and is slightly more
+efficient, due to there not being any need to reverse the iterator. However,
+it's important to understand solution one, because not every context in which
+you'd want to extend a builtin type can be covered so easily with existing
+builtin types and methods. If you don't understand how to generically construct
+the type that you need yourself, it'll be hard to figure out whether there's
+a builtin that satisfies your needs.</p>
+<h2 id="conclusions">Conclusions <div class="anchor-link" aria-hidden="true"><a href="#conclusions">⤶</a></div></h2>
+<p>Either of our solutions satisfy our original requirements:</p>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+A method that, given an input iterator, returns a sorted output iterator</li>
+<li><input disabled="" type="checkbox" checked=""/>
+An extension to the builtin Iterator that lets us use this anywhere we're
+already using an iterator</li>
+</ul>
+<p>They both illustrate one of Rust's greatest strengths, which is that the trait
+system allows a huge amount of flexibility both in terms of defining generic
+behavior and of extending existing behavior. Importantly, nothing is mutated
+or overridden, and all extensions are opt-in. This system is what allows the
+lovely library <a href="https://github.com/mackwic/colored">colored</a> to provide such an elegant interface for adding color to
+console output.</p>
+<p>The process of extending builtin types also helps to demonstrate that builtin
+types are not special! They are easy to introspect, and extending them works the
+same way as extending your own code.</p>
+<p>One might wonder why the standard <code>Iterator</code> trait doesn't define something like
+<code>.sorted()</code> or <code>.sorted_by()</code>. My guess here is that they would break the
+promise of lazy iterators. Since sorting requires collecting the iterator
+into a vec or similar structure, it necessarily the inherent laziness
+of iterators (while also requiring extra heap allocation). Because of this lack
+of laziness, our <code>.sorted_by()</code> implementation is fundamentally incompatible
+with infinite streams of data. For a proper implementation of our
+SortedByExtension, we would probably be better off restricting it to take
+and return <a href="https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html">ExactSizeIterators</a>, which should generally be non-infinite.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2020-09-07</p>
+            <p>Tags: <a href="/tags.html#rust">rust</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/rustconf-2020.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2020
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2020 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>

@@ -12,6 +12,14 @@
 
     
 <entry>
+    <title>Extending Rust Builtins: Adding an Iterator Method</title>
+    <link href="https://blog.mplanchard.com/posts/extending-rust-builtins-iterator-method.html"/>
+    <id>https://blog.mplanchard.com/posts/extending-rust-builtins-iterator-method.html</id>
+    <updated>2020-09-07T00:00:00+00:00</updated>
+    <summary>Rust's trait system makes it easy to add functionality to existing types. Here we explore extending Iterators with a new method, so that we can use our new method in Iterator chains just like .filter(), .map(), or .take().</summary>
+</entry>
+
+<entry>
     <title>RustConf 2020</title>
     <link href="https://blog.mplanchard.com/posts/rustconf-2020.html"/>
     <id>https://blog.mplanchard.com/posts/rustconf-2020.html</id>
