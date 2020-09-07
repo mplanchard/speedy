@@ -133,9 +133,9 @@ a:visited {
 }
 
 code {
+    padding-left: .1em;
+    padding-right: .1em;
     font-family: 'Fira Mono', monospace;
-    background-color: oldlace;
-    color: #bd532a;
 }
 
 address {
