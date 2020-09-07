@@ -4,13 +4,29 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2020-08-22T00:00:00+00:00</updated>
+    <updated>2020-09-07T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>RustConf 2020</title>
+    <link href="https://blog.mplanchard.com/posts/rustconf-2020.html"/>
+    <id>https://blog.mplanchard.com/posts/rustconf-2020.html</id>
+    <updated>2020-09-07T00:00:00+00:00</updated>
+    <summary>Rust has been the world's most-loved programming language for five years running. That's a remarkable feat, especially for a language that, particularly back in 2015, was barely even a blip on the list of most-used languages. That fact that so many people who used Rust wanted to keep working with it was one of the main things that made me want to try it out, leading it to become my most-loved programming language too. This was my first year attending RustConf, albeit virtually. Thanks to the conference, for the first time I feel like I really understand what has led to Rust being not only a great language, but a lovable one. I came away from the conference more bullish than ever that Rust adoption will continue to grow in every space where anyone chances to use it. In this post, I'll talk about some of the things that really stood out to me as highlighting what makes Rust special, along with some of the reasons why I think Rust is poised to grow substantially even outside of its originally-intended niche of systems programming.</summary>
+</entry>
+
+<entry>
+    <title>Selected Reads (2020-09-07)</title>
+    <link href="https://blog.mplanchard.com/posts/selected-reads-2020-09-07.html"/>
+    <id>https://blog.mplanchard.com/posts/selected-reads-2020-09-07.html</id>
+    <updated>2020-09-07T00:00:00+00:00</updated>
+    <summary>From fancy Rust libraries and applications for working with the command line to deep dives into the role of Greek tragedy in driving psychological catharsis to meditations on the relationship between chess and philosophy, this selection of reads covers a pretty broad range of topics.</summary>
+</entry>
+
 <entry>
     <title>Selected Reads (2020-08-22)</title>
     <link href="https://blog.mplanchard.com/posts/selected-reads-2020-08-22.html"/>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - Selected Reads (2020-09-07)</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1 id="selected-reads-(2020-09-07)">Selected Reads (2020-09-07) <div class="anchor-link" aria-hidden="true"><a href="#selected-reads-(2020-09-07)">⤶</a></div></h1>
+<p>This is a selection of articles, videos libraries, tweets, and sundry that
+I've found interesting over the last week or so.</p>
+<h2 id="rust-commandline-library">Rust Commandline Library <div class="anchor-link" aria-hidden="true"><a href="#rust-commandline-library">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://github.com/rust-shell-script/rust_cmd_lib">https://github.com/rust-shell-script/rust_cmd_lib</a></li>
+<li>Author: <a href="https://github.com/tao-guo">https://github.com/tao-guo</a></li>
+</ul>
+<p>This library provides a rust macro that allows you to type in shell
+scripts exactly as you would on the commandline, up to and including
+piping and <code>$</code> interpolation of variables and have them run via the usual
+Rust subprocess machinery. I'm not sure whether or not I will often reach
+for this, given that I don't do a great deal of shelling out from Rust,
+and where I need more than a few lines I feel like I'd generally write
+a shell script to call from Rust, rather than bothering with installing
+a third-party dependency. However, it's a very cool example of the power
+of Rust macros!</p>
+<h2 id="facebook-is-quietly-pressuring-its-independent-fact-checkers-to-change-their-rulings">Facebook is Quietly Pressuring its Independent Fact-Checkers to Change their Rulings <div class="anchor-link" aria-hidden="true"><a href="#facebook-is-quietly-pressuring-its-independent-fact-checkers-to-change-their-rulings">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://www.fastcompany.com/90538655/facebook-is-quietly-pressuring-its-independent-fact-checkers-to-change-their-rulings">https://www.fastcompany.com/90538655/facebook-is-quietly-pressuring-its-independent-fact-checkers-to-change-their-rulings</a></li>
+<li>Author: Alex Pasternack</li>
+</ul>
+<p>An article detailing some of the cases where what seems like executive
+pressure within Facebook has exerted influence over the determinations of
+various fact-checking teams. I think the article made a clear case why the
+reliance on Facebook's self-policing its own platform's role in spreading
+misinformation can't work: the minute that doing the right thing is
+misaligned with the bottom line, the right thing is overruled.</p>
+<h2 id="as-above,-so-below:-bare-metal-rust-generics">As Above, so Below: Bare Metal Rust Generics <div class="anchor-link" aria-hidden="true"><a href="#as-above,-so-below:-bare-metal-rust-generics">⤶</a></div></h2>
+<ul>
+<li>URL
+<ul>
+<li>Part one: <a href="https://www.ecorax.net/as-above-so-below-1/">https://www.ecorax.net/as-above-so-below-1/</a></li>
+<li>Part two: <a href="https://www.ecorax.net/as-above-so-below-2/">https://www.ecorax.net/as-above-so-below-2/</a></li>
+</ul>
+</li>
+<li>Author: <a href="https://github.com/PabloMansanet">PabloMansanet</a></li>
+</ul>
+<p>A great two-parter taking a deep dive into writing generic functions in Rust,
+presented in a &quot;bare-metal&quot; context of writing a storage driver. It does a
+good job of presenting the material in a way that requires very minimal
+preexisting knowledge of either Rust or SSD drivers, while giving the reader
+an excellent opportunity to learn about both.</p>
+<h2 id="the-corner-that-state-universities-have-backed-themselves-into">The Corner That State Universities Have Backed Themselves Into <div class="anchor-link" aria-hidden="true"><a href="#the-corner-that-state-universities-have-backed-themselves-into">⤶</a></div></h2>
+<ul>
+<li>
+<p>URL: <a href="https://www.theatlantic.com/ideas/archive/2020/08/why-state-universities-have-no-other-choice-but-to-reopen/615565/">https://www.theatlantic.com/ideas/archive/2020/08/why-state-universities-have-no-other-choice-but-to-reopen/615565/</a></p>
+</li>
+<li>
+<p>Author: <a href="https://acoup.blog/">Bret Devereux</a></p>
+<p>A long-form version of the twitter thread I linked to in the previous
+iteration of this selected reads series, Bret Devereux discusses the
+sad state of university funding and how it's led to the Catch-22 they
+find themselves in with regards to bringing students back on campus
+during the pandemic.</p>
+</li>
+</ul>
+<h2 id="one-year-of-nushell">One Year of NuShell <div class="anchor-link" aria-hidden="true"><a href="#one-year-of-nushell">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://www.nushell.sh/blog/2020/08/23/year_of_nushell.html">https://www.nushell.sh/blog/2020/08/23/year_of_nushell.html</a></li>
+<li>Author: <a href="https://twitter.com/nu_shell">The NuShell Team</a></li>
+</ul>
+<p>This look back at one year since NuShell's official release was a really
+interesting read. I haven't used NuShell, but it's great to see that people
+are experimenting with ways to improve the shell experience, which has largely
+remained unchanged over the past however many years. I have been meaning to
+give NuShell a shot since I first saw their public release, and it seems like
+this is as a good a time as any.</p>
+<h2 id="i-don't-like-notebooks">I Don't Like Notebooks <div class="anchor-link" aria-hidden="true"><a href="#i-don't-like-notebooks">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://www.youtube.com/watch?v=7jiPeIFXb6U">https://www.youtube.com/watch?v=7jiPeIFXb6U</a></li>
+<li>Author: <a href="https://joelgrus.com/">Joel Grus</a></li>
+</ul>
+<p>A coworker linked me to this video as a result of a conversation we were having
+about Jupyter notebooks. This is a great talk, and a brave one to give at
+Jupyter Con! I find myself largely in the same boat as the author, although I've
+never been able to articulate it quite so well. Essentially, I've always really
+wanted to get into and like notebooks, but the experience of writing code in a
+proper editor has always felt so much better that I've never really been able to
+find any use for them. This talk helped encapsulated a lot of the things that
+feel like they're lacking.</p>
+<h2 id="rust-1.46.0">Rust 1.46.0 <div class="anchor-link" aria-hidden="true"><a href="#rust-1.46.0">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://blog.rust-lang.org/2020/08/27/Rust-1.46.0.html">https://blog.rust-lang.org/2020/08/27/Rust-1.46.0.html</a></li>
+</ul>
+<p>There were a few of exciting things about this version of Rust, but by far the
+biggest improvement is the expansion of what's allowed in <code>const fn</code> functions.
+<code>const</code> functions allow you to define parameterized code that can be run at
+compile time or at runtime, and this update significantly expands what's allowed
+within a <code>const fn</code>. I'm currently working on a chess engine as a learning
+project, and I've already been able to use these improvements to help me easily
+generate constant bitboards representing a variety of positions at compile-time,
+which can then be used at runtime to evaluate moves.</p>
+<h2 id="pure-and-applied-chess">Pure and Applied Chess <div class="anchor-link" aria-hidden="true"><a href="#pure-and-applied-chess">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://theelectricagora.com/2020/08/28/pure-and-applied-chess/">https://theelectricagora.com/2020/08/28/pure-and-applied-chess/</a></li>
+<li>Author: <a href="https://genepi.qimr.edu.au/Staff/davidD/">David L. Duffy</a></li>
+</ul>
+<p>This is a broad, discursive, indulgent essay exploring thoughts about the game
+of chess its relationship with philosophy. Pulling in references from
+Wittgenstein, Daniel Dennett, and others, this is exactly the sort of
+philosophical wankery I most dearly love.</p>
+<h2 id="the-door-problem">The door problem <div class="anchor-link" aria-hidden="true"><a href="#the-door-problem">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="http://www.lizengland.com/blog/2014/04/the-door-problem/">http://www.lizengland.com/blog/2014/04/the-door-problem/</a></li>
+<li>Author: <a href="http://www.lizengland.com/blog/">Liz England</a></li>
+</ul>
+<p>I really enjoyed this brief exploration of the exploding complexity of even
+the simplest detail in a complex system. The author considers the seemingly
+trivial example of &quot;let's add doors to our game,&quot; and follows up an amazing
+array of complications and decisions that arise. The &quot;door problem&quot; is also
+used to illustrate the role of different people involved in the production
+of games.</p>
+<h2 id="can-greek-tragedy-get-us-through-the-pandemic?">Can Greek Tragedy Get Us through the Pandemic? <div class="anchor-link" aria-hidden="true"><a href="#can-greek-tragedy-get-us-through-the-pandemic?">⤶</a></div></h2>
+<ul>
+<li>URL: <a href="https://www.newyorker.com/culture/culture-desk/can-greek-tragedy-get-us-through-the-pandemic">https://www.newyorker.com/culture/culture-desk/can-greek-tragedy-get-us-through-the-pandemic</a></li>
+<li>Author: <a href="https://www.newyorker.com/contributors/elif-batuman">Elif Batuman</a></li>
+</ul>
+<p>One of the best things I read all week (and summarily <a href="https://news.ycombinator.com/item?id=24380616">shit on</a> by HackerNews
+commenters, with the all of their characteristic performative intellectualism),
+this article begins with a focus on a theater group call <a href="https://theaterofwar.com/about">Theater of War
+Productions</a>, which began some time ago to use the medium of Greek tragedy to
+drive catharsis and discussion of taboo subjects among veterans and other
+groups that have experienced signifcant past trauma. The group has now adapted
+the tragedy of Oedipus to address the COVID pandemic and our associated
+collective trauma, performing the play over Zoom to a &quot;crowd&quot; of about
+fifteen thousand. The article covers an impressive breadth of content,
+ranging from the history of theater in ancient Greece to the development
+of the idea of catharsis in Freudian psychoanalysis as a means of processing
+repressed trauma to the personal history of the founder of Theater of War,
+whose father was a psychologist and who studied classics at University.
+Despite the broad range of topics, the author deftly ties them all up into
+a neatly reported thesis that perhaps the role of classical tragedy and other
+such serious theater may have always been somewhat more pragmatic than
+is usually realized, and that it can continue to have the psychologically
+healing effect for which it was originally intended on modern audiences who
+have dealt with their own traumas.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2020-09-07</p>
+            <p>Tags: <a href="/tags.html#academics">academics</a>, <a href="/tags.html#chess">chess</a>, <a href="/tags.html#classics">classics</a>, <a href="/tags.html#facebook">facebook</a>, <a href="/tags.html#jupyter">jupyter</a>, <a href="/tags.html#philosophy">philosophy</a>, <a href="/tags.html#psychology">psychology</a>, <a href="/tags.html#rust">rust</a>, <a href="/tags.html#software">software</a>, <a href="/tags.html#theater">theater</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/selected-reads-2020-08-22.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        <a href="/posts/rustconf-2020.html">
+    next &gt
+</a>
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2020
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2020 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>

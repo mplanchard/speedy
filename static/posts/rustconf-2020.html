@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Matthew Planchard's personal blog">
+    <meta name="keywords"
+        content="programming, rust, html, python, javascript, html, austin, texas, blog, philosophy, software, development">
+    <meta name="author" content="Matthew Planchard">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="feed" type="application/atom+xml" title="RSS Feed" href="/atom.xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/js/vendor/highlight/styles/solarized-light.css">
+
+    <title>MP - RustConf 2020</title>
+
+    <script src="/js/vendor/highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body>
+    <header>
+        <div>
+    <a href="/">
+        <abbr title="Matthew Planchard">MP</abbr>
+    </a>
+</div>
+<nav class="header-links">
+    <ol>
+        <li class="header-link">
+            <a href="/posts.html">
+                Posts
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/tags.html">
+                Tags
+            </a>
+        </li>
+        <li class="header-link">
+            <a href="/about.html">
+                About
+            </a>
+        </li>
+    </ol>
+</nav>
+    </header>
+    <main>
+        <h1 id="rustconf2020:-what-makes-a-language-great">RustConf2020: What Makes a Language Great <div class="anchor-link" aria-hidden="true"><a href="#rustconf2020:-what-makes-a-language-great">⤶</a></div></h1>
+<p>Rust has been the world's <a href="https://insights.stackoverflow.com/survey/2020#most-loved-dreaded-and-wanted">most-loved programming language for five years running</a>.
+That's a remarkable feat, especially for a language that, particularly back in
+2015, was barely even a blip on the list of most-used languages. That fact that
+so many people who used Rust wanted to keep working with it was one of the main
+things that made me want to try it out, leading it to become <em>my</em> most-loved
+programming language too.</p>
+<p>This was my first year attending RustConf, albeit virtually. Thanks to the
+conference, for the first time I feel like I really understand what has
+led to Rust being not only a great language, but a lovable one. I came away from
+the conference more bullish than ever that Rust adoption will continue to grow
+in every space where anyone chances to use it.</p>
+<p>In this post, I'll talk about some of the things that really stood out to me as
+highlighting what makes Rust special, along with some of the reasons why I think
+Rust is poised to grow substantially even outside of its originally-intended
+niche of systems programming.</p>
+<p>As an aside, thanks to my employer, <a href="https://bestow.com/">Bestow</a>, for sponsoring my registration
+through our yearly &quot;Bestow Scholarship&quot; education budget.</p>
+<h2 id="crafting-a-lovable-language">Crafting a Lovable Language <div class="anchor-link" aria-hidden="true"><a href="#crafting-a-lovable-language">⤶</a></div></h2>
+<p>The <a href="https://www.youtube.com/watch?v=IwPRu5FhfIQ">Opening Keynote</a>, presented by members of the Rust core team, focused on
+the history and growth of Rust, reflecting on how the language's guiding
+principles have shaped the priority-setting and decision-making necessary for
+its evolution. To me, it seems clear that it is these principles and a clear
+alignment around them that have led to Rust's being the language it is today,
+rather than the particular technical excellence of its founders and core team.
+Of course, the core team is brilliant, but most languages the get any traction
+come from excellent programmers. Even so, not every language is Rust.</p>
+<h3 id="the-value-of-values">The Value of Values <div class="anchor-link" aria-hidden="true"><a href="#the-value-of-values">⤶</a></div></h3>
+<p>Growth is hard. Whether we're talking about a company, a framework, or a
+programming language, growth often brings with it a whole new host of
+problems, one of the most difficult of which tends to be how to manage
+priorities in the fact of increased demands. Many projects find in a position
+of needing to simultaneously build a framework for decision-making from
+scratch while also dealing with problems of scale. Often, this is a recipe
+for disaster, and it seems like one of the reasons why Rust's growth has
+been relatively smooth has been the presence of an in-baked value system
+from the beginning.</p>
+<p>So what are Rust's values? They are probably most succinctly expressed
+in the language's motto, which is prominently featured on the homepage:</p>
+<blockquote>
+<p>A language empowering everyone to build reliable and efficient software.</p>
+</blockquote>
+<p>The core team spent a fair amount of time in the keynote diving into this
+motto, and in particular the &quot;empowering everyone&quot; part of it. It was
+specifically noted that &quot;write good software isn't a value.&quot; Software is
+written by people, for people, and it's core to the values of Rust to
+focus on the empowerment both of software authors (including the authors
+of the language itself) and software users. It's clear how reliable and
+efficient software benefits users, but what I found particularly interesting
+are the priorities that the Rust project has set as a result of wanting
+to help software authors:</p>
+<ul>
+<li>Eliminate things that don't need to be hard</li>
+<li>Educate people on things that <em>are</em> hard</li>
+<li>Provide access to spaces and power in the project</li>
+</ul>
+<p>Let's look at how each of these focuses had led to some of the unique
+properties of Rust that set it apart from other languages, and how they
+will continue to guide Rust's evolution going forward.</p>
+<ol>
+<li>
+<p>Eliminate Things that Don't Need to be Hard</p>
+<p>Rust has a very strong commitment to backwards compatibility, and this
+has been wonderful in practice (updating an old nightly-only Rust project
+to support standard once the 2018 edition was released was a project of
+less than an hour's work). The thoughtful technical solutions around
+maintaining this compatibility (the edition system, the ability to shop
+features in nightly, etc.) make users' lives easier, while <em>also</em> allowing the
+language to introduce major new syntax, rules, and other changes in a
+non-disruptive way. Some examples of this so far have been the reworked
+module system, which became default in the 2018 edition, the `?` syntax
+to replace the `try!` macro, and improved lifetime elision. All of these
+significantly changed the way the language was written, but they were all
+opt-in, and code using the old patterns continues to compile without complaint.</p>
+<p>Another much-loved aspect of Rust is its build system, Cargo. Cargo provides
+not only access to typical `make` functionality, but also to the entire
+crates.io ecosystem, making it remarkably easy to share code, particularly
+for a &quot;systems&quot; language. It also provides inbuilt cross-compilation to a
+variety of targets, easy extensibility, a test runner, and a benchmark runner.
+Really, more than almost anything else, Cargo makes it easy when you're
+first getting started with Rust to be able to immediately focus on
+<em>writing code</em>.</p>
+<p>Currently, the level of growth that Rust has experienced has left the core
+team and other contributors to the language itself a bit stretched, so a major
+focus going forward will be make it easier to get started using Rust to write
+Rust. The solidification of the 3-year release cadence of editions is a part
+of this, designed to reduce stress around getting features in &quot;on a deadline&quot;
+because of a lack of certainty as to when they'll be included if they don't
+make it in. The core team is also looking to improve the RFC process, to open
+up their agenda, and to establish a governance working group. Finally,
+the nascent <a href="https://blog.rust-lang.org/2020/08/18/laying-the-foundation-for-rusts-future.html">Rust Foundation</a> aims to make it easy for the Rust project to manage
+the contracts and money necessary for hosting documentation, CI, outreach, etc.</p>
+<p>For language users, there is continuing investment into <a href="https://rust-analyzer.github.io/">rust-analyzer</a>, a
+state-of-the-art language server for improved IDE support, improvements to
+`clippy`, including an autofix feature, and of course continuing improvements
+to language ergonomics, including a continued focus on async.</p>
+</li>
+<li>
+<p>Educate People on the things that <em>Are</em> Hard</p>
+<p>Some things are intractably difficult, and that's okay. Rust has so far and
+will continue to focus on making those hard things easier through education.</p>
+<p>One of the examples of this that was particularly striking to me when I was
+getting started with Rust was the documentation: <a href="https://doc.rust-lang.org/stable/book/">The Book</a>, the stanstartedbrary documentation, and the Rustonomicon (a guide to writing unsafe Rust)
+are all included with the language itself and can be easily accessed by
+running `rustup doc`. This means that I wasn't dead in the water when I
+wanted to write some Rust on an airplane and had forgotten to pre-download
+the docs. It also shows thoughtfulness and empathy towards the many people
+who are developing software in situations where constant, fast Internet
+access is not a given, a group that is very often a blind spot of modern
+tech.</p>
+<p>In addition to the standard docs, every single crate uploaded to crates.io
+automatically has its API documentation built and hosted on doc.rust-lang.org.
+This is wildly fantastic! Sure, you can build your API docs in other languages
+(although Python in particular is often a herculean task involving restructured
+text and obscure Sphinx configs), but then you've got to figure out how to
+host them. For Rust, every third-party library automatically has published
+documentation, accessible in a consistent format.</p>
+<p>Another example is of course Rust's famous compiler messages. Much ink has
+been spilled extolling their virtues, so I won't go too far into it, except
+to say that probably 90% of how I learned about Rust's system of ownership
+validation and borrowing came from reading compiler errors. This was, in fact,
+the entire focus of a <a href="https://www.youtube.com/watch?v=Z6X7Ada0ugE&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=5">later talk in the conference</a> by Esteban Kuber, in which
+he expressed the radical idea that the <em>primary</em> purpose of a compiler, rather
+than being to compile code, should be to provide a tool to teach the user
+how to write code that can be compiled. Esteban's talk focused on the unique
+nature of the compiler as the one tool that everyone has to use, and that,
+through analysis of what the user <em>tried</em> to do, it can potentially serve as
+a personalized tutor, guiding the user towards correcting their misconceptions,
+even providing tailored feedback depending on which other language it seems like
+the user is trying to map onto Rust semantics.</p>
+<p>For the future, there are continuing efforts to make error messages even better
+(see Esteban's talk for some examples). In addition, the <a href="https://forge.rust-lang.org/">Rust Forge</a> aims to make
+it easier for people to start contributing to Rust, while the <a href="https://rustc-dev-guide.rust-lang.org/index.html">rustc-dev-guide</a>
+hopes to ease the learning curve for working on the compiler.</p>
+</li>
+<li>
+<p>Provide Access to Spaces and Power in the Project</p>
+<p>Rust is community driven, and it is relatively famous for having one of the more
+welcoming, helpful communities of any programming language. It turns out this
+isn't an accident.</p>
+<p>From the beginning, the Rust project had a <a href="https://www.rust-lang.org/policies/code-of-conduct">Code of Conduct</a> focusing on empathy
+and inclusion. The founder insisted upon it because he didn't want to have
+to &quot;subject [himself] to the kind of discourse normally surrounding
+language-building communities. In other words: the norms of <em>other</em>
+communities were already excluding <em>me</em>.&quot; The presence and enforcement of
+this code of conduct has helped Rust to build a vibrant community where
+people feel as though they can express themselves freely. The effects of this
+focus could be seen at RustConf 2020, at which over half of the speaker lineup
+(selected blind) comprised trans people.</p>
+<p>This focus on providing access can also be seen in the Rust RFC process. All
+new language features are proposed as RFCs. <em>Anyone</em> can contribute an RFC,
+and <em>anyone</em> can comment on one. This gives the community an amazing amount
+of visibility into and opportunity to influence the language. In addition,
+all Rust governance is performed by teams drawn from the community. The team
+structure allows people who are passionate about a given aspect of the language
+to have the opportunity to have their say and contribute.</p>
+<p>While Rust's community is probably among the best of any programming language,
+it's still got room for improvement. The new <a href="https://rustbridge.com/">RustBridge</a> project aims to teach
+Rust to and provide opportunities for people from underrepresented backgrounds.
+In addition, new teams have been created to focus on ensuring that the growth
+of the language does not come with a loss of its culture of inclusion, as
+online spaces like <a href="https://www.reddit.com/r/rust/">/r/rust</a> continue to grow. In addition, the core team took
+the time to highlight <a href="https://rustbeginners.github.io/awesome-rust-mentors/">Awesome Rust Mentors</a>, a project started by Jane Lusby
+(author of the <a href="https://docs.rs/eyre">eyre</a> library and of several recent error-handling RFCs).</p>
+<p>Finally, among language contributors, there is a renewed focus around ensuring
+that people aren't being &quot;heroes&quot; and burning out, an acknowledgment that
+mentoring and community building is just as essential as language development,
+and a continued focus on empathy.</p>
+</li>
+</ol>
+<h3 id="the-politics-of-empathy">The Politics of Empathy <div class="anchor-link" aria-hidden="true"><a href="#the-politics-of-empathy">⤶</a></div></h3>
+<p>Given the primacy of people in Rust's values, and in particular the focus on
+empathy as a means of understanding people's needs in order to improve the
+language, it seems unavoidable that some consideration of politics are
+unavoidable. The portion of the opening keynote by Ashley Williams approached
+the political question head on, and her section was one of my favorite bits
+of the conference, veering definitely philosophical.</p>
+<p>She noted that Rust wants to be impactful, and the way it wants to be impactful
+is described in its motto, &quot;empowering everyone to build reliable and efficient
+software.&quot; To empower, she notes, is to give someone power to do something,
+and one of the definitions of politics is &quot;the debate or conflict among
+individuals or parties hoping to achieve power.&quot; As such, in order to properly
+fulfill its goal, Rust innately is and must be political. Avoiding this issue
+would negate the stated goal. And to begin to address it, one of the most
+important question is <em>who</em> does Rust want to empower? The slogan says
+&quot;everyone&quot; of course, but Ashley points out that focus is a limited resource,
+and so Rust must make decisions about what people they focus on when making
+decisions. Rust has a remarkable diversity of developers from different
+programming languages and paradigms: C and C++ developers; web developers
+who come from writing Python, Ruby, and JavaScript; researchers;
+data scientists; and more. It cannot be all things to all of these groups
+at all times.</p>
+<p>One of the goals when focusing on any given audience for Rust is expressed
+by the old saw &quot;a rising tide lifts all ships,&quot; which Ashley wisely points
+out as having a hidden value judgment, namely that a rising tide <em>should</em>
+lift all ships. At least in the context of the Rust project, they believe that
+it should, and that it's important to evaluate whether all ships really
+are rising as the tide rises. As such, Rust's framework for choosing who
+to focus on looks at who has the greatest need: who has the fewest resources
+and the least ability to help themselves? The Rust team believes that
+producing things for the people with the greatest need should and does wind up
+helping everyone, often in surprising ways.</p>
+<p>With that in mind, Rust aims to be a &quot;systems programming&quot; language, built
+<em>especially</em> for people who haven't done or don't think that they can do
+systems programming. A clear result of this has been the steady bubbling
+up of Rust in spaces outside of systems programming, since its performance
+and correctness guarantees, along with its ergonomics, are appealing to
+engineers of all stripes.</p>
+<p>As Ashley put it, Rust wants to redistribute the power of systems programming,
+and she points out that they need the community to get involved, to contribute,
+and to help ensure that Rust will have the capacity it needs to do things
+the right way.</p>
+<h2 id="a-general-purpose-systems-language:-the-future-of-rust">A General Purpose Systems Language: the Future of Rust <div class="anchor-link" aria-hidden="true"><a href="#a-general-purpose-systems-language:-the-future-of-rust">⤶</a></div></h2>
+<p>The Rust team's focus on core values and empathy gives me confidence that the
+language will only get better over time. However, another thing the conference
+really highlighted for me was the massive success that Rust has already had
+in expanding beyond the realm of systems programming.</p>
+<h3 id="a-faster,-safer-glue-language">A Faster, Safer Glue Language <div class="anchor-link" aria-hidden="true"><a href="#a-faster,-safer-glue-language">⤶</a></div></h3>
+<p>Typically, Python is the language of choice for stitching together a bundle
+of existing tools (often written in different languages) for the purpose of
+analytics or data processing. <a href="https://www.youtube.com/watch?v=2b8InauuRqw&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=4">Under a Microscope: Exploring Fast and Safe Rust
+for Biology</a> looks at how Rust can be a great fit for this use case. Often
+such processing requires streaming of data between processes, which can
+sometimes necessitate data transformation to map something from one program's
+output to another's input. In this scenario, it's easy for your glue to
+become a bottleneck. Not only can Rust potentially resolve such a bottleneck
+by virtue of its own speed, but its ability to tightly integrate with C
+and C++ codebases means that sometimes you may not even need the subprocess
+boundary, instead just being able to call functions directly from your
+&quot;glue&quot; layer and eliminate an entire parsing step.</p>
+<h3 id="game-development">Game Development <div class="anchor-link" aria-hidden="true"><a href="#game-development">⤶</a></div></h3>
+<p>Long the domain of C++ (and sometimes C#), Rust's gaming ecosystem is getting
+to the point where it's a serious option for indie game development.
+<a href="https://www.youtube.com/watch?v=GFi_EdS_s_c&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=6">Starting a 2D Game with Amethyst</a> highlights how easy it is to get a basic
+2D game going using the amethyst framework. It may take years for a AAA
+framework like Unreal to show up in Rust, but in the meantime, I expect
+to see the more and more small gaming studios pick Rust up for its
+improved ergonomics compared to the traditional options.</p>
+<h3 id="hardware-drivers">Hardware Drivers <div class="anchor-link" aria-hidden="true"><a href="#hardware-drivers">⤶</a></div></h3>
+<p>Definitely a &quot;systems programming&quot; thing, but <a href="https://www.youtube.com/watch?v=xlVnp7VOxRE&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=7">Controlling Telescope Hardware
+with Rust</a> really helped to highlight how much less intimidating it feels to
+interface with some old hardware's C API when you can wrap it in Rust. As
+Rust steadily makes its way towards being allowed for Linux kernel development,
+I could see it being a pathway for people to move from web development or
+another of the realms where Rust has gained some popularity into these
+types of low-level projects. Between the improved language ergonomics and
+the improved safety, I hope to see Rust help to fill the general lack of
+engineers able to and willing to work on things like device drivers for
+Linux operating systems.</p>
+<h3 id="scripts-and-general-programming">Scripts and General Programming <div class="anchor-link" aria-hidden="true"><a href="#scripts-and-general-programming">⤶</a></div></h3>
+<p><a href="https://www.youtube.com/watch?v=BBvcK_nXUEg&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=9">Rust for Non-Systems Programmers</a> was a great talk that looked at some tips
+and shortcuts that you can take to make Rust development (nearly) as easy
+as writing something in a dynamic language like Python. It pointed out, for
+example, how much of the error handling in Rust would simply throw an
+exception in other languages, so especially for an initial implementation
+or a quick script, <code>.unwrap()</code> is often just fine. Similarly, it's okay
+to <code>.clone()</code> things rather than dealing with lifetimes.</p>
+<p>In addition to looking at how to make writing Rust more accessible,
+the talk looked at some of the things that Rust makes particularly <em>easy</em>,
+even compared with dynamic languages. This includes best-in-class libraries
+for things like argument parsing and serialization/deserialization, as well
+as language features like impls with generic methods, enums, pattern
+matching, and inline unit testing.</p>
+<h2 id="highlighted-talks">Highlighted Talks <div class="anchor-link" aria-hidden="true"><a href="#highlighted-talks">⤶</a></div></h2>
+<p>A couple of other talks I really enjoyed but didn't get the chance to highlight
+elsewhere were Jane Lusby's <a href="https://www.youtube.com/watch?v=rAF8mLI0naQ&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=2">Error Handling Isn't All About Errors</a> and
+Siân Griffin's closing keynote, <a href="https://www.youtube.com/watch?v=RNsEsZbXE-4&amp;list=PL85XCvVPmGQijqvMcMBfYAwExx1eBu1Ei&amp;index=10">Learning Empathy from Pokémon Blue</a>. The former
+was a great deep dive into a differentiation Rust's trait system enables between
+errors and error reporters, the differences between how different types of
+errors should be handled, and some tips for library and application authors.
+The latter is one of the most interesting talks I've ever seen, looking at
+the confluence of factors that led to the MissingNo (RareCandy) glitch in
+Pokémon Blue. This was a great exploration of the effects of constraints
+on development in general, on the particular constraints of GameBoy
+development in the 90s, and the amazingly subtle ways in which a variety
+of unrelated behavior can interact in unexpected ways to create legendary
+glitches.</p>
+<h2 id="summary">Summary <div class="anchor-link" aria-hidden="true"><a href="#summary">⤶</a></div></h2>
+<p>RustConf was a great experience. I came away from it with a significantly
+better understanding of the guiding principles behind the language, which
+made me even more optimistic than I already was about Rust's future. It
+feels good to be working with a project that makes such open and overt
+efforts to be inclusive and to ensure that everyone feels like they're
+welcome. I believe that focusing on empathy towards the users of the
+language and towards the language developers will keep Rust as one of,
+if not the most loved language for years to come.</p>
+<p>Meanwhile, I was amazed by the huge variety of projects that people are
+using Rust for. It's inspiring to see it bringing people into worlds and
+types of programming that they've never experienced before. Something
+that was highlighted in the opening keynote is that Rust proves that
+the common conception that developers of different languages are different
+or incompatible in some way is simply false. Rust has become a language where
+JavaScript developers and C++ developers can form a common community, a
+prospect that might have seemed impossible a few years ago.</p>
+<p>As all of my coworkers know—at this point my bringing up Rust in
+barely related conversations is basically a drinking game—I love Rust.
+Prior to RustConf, this was due almost entirely to the virtues of the
+language itself. However, the conference showed that the language was not
+created <em>ex nihilo</em>, and perhaps unsurprisingly, the community that
+created it is also pretty darn great.</p>
+
+        <section class="post-metadata">
+            <p>Last Updated: 2020-09-07</p>
+            <p>Tags: <a href="/tags.html#rust">rust</a>, <a href="/tags.html#RustConf2020">RustConf2020</a></p>
+        </section>
+    </main>
+    <footer>
+        <nav class="footer-nav">
+    <div class="footer-nav-left">
+        <a href="/posts/selected-reads-2020-09-07.html">
+    &lt previous
+</a>
+    </div>
+    <div class="footer-nav-right">
+        
+    </div>
+</nav>
+        <div class="footer-common">
+    <nav class="footer-links">
+        <ol>
+            <li class="footer-common-link">
+                <a href="/atom.xml">
+                    RSS
+                </a>
+            </li>
+        </ol>
+    </nav>
+    <details class="footer-license">
+        <summary>
+            &copy; Matthew Planchard, 2020
+            <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                (CC BY-SA 4.0)
+            </a>
+        </summary>
+        <p>
+            &copy; 2020 by Matthew Planchard &mdash; unless otherwise noted,
+            all content is made available under the
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License
+            </a>.
+        </p>
+    </details>
+</div>
+    </footer>
+</body>
+
+</html>
