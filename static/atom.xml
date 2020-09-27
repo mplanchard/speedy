@@ -4,13 +4,21 @@
     <title>Matthew Planchard's Blog</title>
     <link rel="self" href="https://blog.mplanchard.com/atom.xml"/>
     <link href="https://blog.mplanchard.com/"/>
-    <updated>2020-09-07T00:00:00+00:00</updated>
+    <updated>2020-09-27T00:00:00+00:00</updated>
     <author>
         <name>Matthew Planchard</name>
     </author>
     <id>https://blog.mplanchard.com/</id>
 
     
+<entry>
+    <title>Selected Reads (2020-09-27)</title>
+    <link href="https://blog.mplanchard.com/posts/selected-reads-2020-09-27.html"/>
+    <id>https://blog.mplanchard.com/posts/selected-reads-2020-09-27.html</id>
+    <updated>2020-09-27T00:00:00+00:00</updated>
+    <summary>It&rsquo;s been a minute since I put out a list of selected reads, which means we&rsquo;ve got quite a few today. Lots of Rust, as usual, but also some politics, an article on VSCode, and another Bret Devereux post on academics.</summary>
+</entry>
+
 <entry>
     <title>Extending Rust Builtins: Adding an Iterator Method</title>
     <link href="https://blog.mplanchard.com/posts/extending-rust-builtins-iterator-method.html"/>
